@@ -60,25 +60,12 @@ public class TreeNode
         return contador;
     }*/
 
-    public float GetEvaluacion(string funcionEvaluativa, PathFinder pathFinder)
-    {
-        if (funcionEvaluativa == "Greedy")
-            return EvaluacionGreedy();
-        else if (funcionEvaluativa == "A*")
-            return EvaluacionAStar();
-        else if (funcionEvaluativa == "Depth")
-            return EvaluacionDepth();
-        else if (funcionEvaluativa == "Breadth")
-            return EvaluacionBreadth(pathFinder);
-        else return 0;
-    }
-
-    private float EvaluacionGreedy()
+    public float EvaluacionGreedy()
     {
         return Data.GetHeuristic();
     }
 
-    private float EvaluacionAStar()
+    public float EvaluacionAStar()
     {
         float costoAcumulado = 0;
         TreeNode nodo = this;
@@ -88,15 +75,5 @@ public class TreeNode
             nodo = nodo.Padre;
         } while (nodo.Padre != null);
         return Data.GetHeuristic() + costoAcumulado;
-    }
-
-    private float EvaluacionDepth()
-    {
-        return -this.Data.Profundidad;
-    }
-
-    private float EvaluacionBreadth(PathFinder pathFinder)
-    {
-        return Math.Abs(this.Data.Profundidad - pathFinder.GetProfundidadActual());
     }
 }

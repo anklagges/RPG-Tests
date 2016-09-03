@@ -94,12 +94,13 @@ public class GeneradorSuelo : MonoBehaviour
     {
         caminoPrincipalGrilla = new List<Vector2>();
         int x, y;
+        TreeNode nodoMasCercano;
         try
         {
             for (int i = 1; i < contenedorEntradas.childCount; i++)
             {
                 foreach (Vector2 posicion in Utilidades.GetVectoresRuta(Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(0).position, m_ciudad.transform),
-                    new List<Vector2>() { Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(i).position, m_ciudad.transform) }, m_ciudad, false, null))
+                    new List<Vector2>() { Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(i).position, m_ciudad.transform) }, m_ciudad, false, null, out nodoMasCercano))
                 {
                     x = (int)posicion.x;
                     y = (int)posicion.y;
@@ -140,9 +141,10 @@ public class GeneradorSuelo : MonoBehaviour
         foreach (Edificio edificio in edificios)
         {
             if (edificio.transform.parent.name != transform.parent.name || !edificio.gameObject.activeSelf) continue;
+            TreeNode nodoMasCercano;
             try
             {
-                foreach (Vector2 posicion in Utilidades.GetVectoresRuta(Utilidades.GetPosicionGrilla(edificio.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null))
+                foreach (Vector2 posicion in Utilidades.GetVectoresRuta(Utilidades.GetPosicionGrilla(edificio.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null, out nodoMasCercano))
                 {
                     x = (int)posicion.x;
                     y = (int)posicion.y;

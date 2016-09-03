@@ -66,7 +66,7 @@ public class Utilidades : MonoBehaviour
         return suelo.EsPosible((int)posObjetivo.x, (int)posObjetivo.y);
     }
 
-    public static List<Vector2> GetVectoresRuta(Vector2 posInicial, List<Vector2> posObjetivos, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc)
+    public static List<Vector2> GetVectoresRuta(Vector2 posInicial, List<Vector2> posObjetivos, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc, out TreeNode nodoMasCercano)
     {
         PathFinder pathFinder = new PathFinder();
         pathFinder.SetNodoInicial(new Suelo(posInicial, posObjetivos, ciudad, considerarNPCs, npc));
@@ -74,8 +74,14 @@ public class Utilidades : MonoBehaviour
         for (int i = 0; i < posObjetivos.Count; i++)
             posFinales.Add(new Suelo(posObjetivos[i], posObjetivos[i], ciudad, considerarNPCs, npc));
         pathFinder.SetNodosFinales(posFinales.ToArray());
-        List<TreeNode> ruta = pathFinder.GetRuta("A*", false);
-        //DebugRuta(ruta);
+        List<TreeNode> ruta = pathFinder.GetRuta(false);
+        nodoMasCercano = pathFinder.nodoMasCercano;
+        DebugRuta(ruta);
+        return TransformarRuta(ruta);
+    }
+
+    public static List<Vector2> TransformarRuta(List<TreeNode> ruta)
+    {
         List<Vector2> posiciones = new List<Vector2>();
         Suelo sueloSiguiente;
         try

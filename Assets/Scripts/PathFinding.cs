@@ -5,14 +5,15 @@ public class PathFinder
 {
     //Publicos
     public List<Data> DataLog { get; set; }
-    public string FuncionEvaluativa { get; set; }
     public bool PermitirChicle { get; set; }
-    public bool PermitirReemplazoVisitados { get; set; }
     public Dictionary<string, Data> PuntosClave { get; set; }
+    public TreeNode nodoMasCercano;
+
     public void SetNodoInicial(Data data)
     {
         NodoInicial = new TreeNode(data);
     }
+
     public void SetNodosFinales(Data[] datas)
     {
         TreeNode nodoFinal;
@@ -63,42 +64,41 @@ public class PathFinder
     /// <param name="FuncionEvaluativa">Posibles funciones Evaluativas: A*, Greedy, Breadth, Depth</param>
     /// <param name="permitirChicle">Permitir que vuelva a la posicion anterior de inmediato?</param>
     /// <returns></returns>
-    public List<TreeNode> GetRuta(string funcionEvaluativa, bool permitirChicle)
+    public List<TreeNode> GetRuta(bool permitirChicle)
     {
-        FuncionEvaluativa = funcionEvaluativa;
         PermitirChicle = permitirChicle;
-        PermitirReemplazoVisitados = PermitirReemplazo(funcionEvaluativa);
         return GetRuta();
-    }
-
-    public bool PermitirReemplazo(string funcionEvaluativa)
-    {
-        //No deben permitir reemplazo: depth, breadth
-        return funcionEvaluativa == "Greedy" || funcionEvaluativa == "A*";
     }
 
     public List<TreeNode> GetRuta()
     {
         Init();
         int contador = 0;
+        nodoMasCercano = null;
         while (true)
         {
-            if (contador == LimiteLoopInfinito) return null;
+            if (contador == LimiteLoopInfinito) 
+                return null;
             if (NodosFinales.Exists(x => x.Data.Comparar(NodoActual.Data)))
                 return NodoActual.ObtenerRutaDesdeOrigen();
             if (PuntosClave.ContainsKey(NodoActual.Data.Comparador))
             {
                 PuntosClave.Remove(NodoActual.Data.Comparador);
-                if (PuntosClave.Count == 0) return null;
+                if (PuntosClave.Count == 0) 
+                    return null;
             }
             AgregarPosibles();
-            if (NodosPosibles.Count == 0) return null;
+            if (NodosPosibles.Count == 0)
+                return null;
             NodoActual = NodosPosibles[0];
+            if (nodoMasCercano == null || NodoActual.EvaluacionGreedy() < nodoMasCercano.EvaluacionGreedy())
+                nodoMasCercano = NodoActual;
             DataLog.Add(NodoActual.Data);
             NodosPosibles.RemoveAt(0);
             contador++;
         }
     }
+
 
     public void Init()
     {
@@ -132,7 +132,7 @@ public class PathFinder
         TreeNode nodoAux;
         if (NodosVisitados.TryGetValue(nodoPosible.Data.Comparador, out nodoAux))
         {
-            if (!PermitirReemplazoVisitados || nodoAux.GetEvaluacion(FuncionEvaluativa, this) <= nodoPosible.GetEvaluacion(FuncionEvaluativa, this))
+            if (nodoAux.EvaluacionAStar() < nodoPosible.EvaluacionAStar())
                 return true;
             else
                 NodosPosibles.Remove(nodoAux);
@@ -142,10 +142,10 @@ public class PathFinder
 
     private void AgregarNodoToPosibles(TreeNode nodoAgregado)
     {
-        float evaluacionAgregado = nodoAgregado.GetEvaluacion(FuncionEvaluativa, this);
-        if (NodosPosibles.Count > 0 && evaluacionAgregado < NodosPosibles.Last().GetEvaluacion(FuncionEvaluativa, this))
+        float evaluacionAgregado = nodoAgregado.EvaluacionAStar();
+        if (NodosPosibles.Count > 0 && evaluacionAgregado < NodosPosibles.Last().EvaluacionAStar())
         {
-            int indiceAux = NodosPosibles.FindIndex(x => x.GetEvaluacion(FuncionEvaluativa, this) >= evaluacionAgregado);
+            int indiceAux = NodosPosibles.FindIndex(x => x.EvaluacionAStar() >= evaluacionAgregado);
             NodosPosibles.Insert(indiceAux, nodoAgregado);
         }
         else NodosPosibles.Add(nodoAgregado);

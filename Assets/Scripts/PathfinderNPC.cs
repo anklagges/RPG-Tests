@@ -142,7 +142,10 @@ public class PathfinderNPC : MonoBehaviour
         npc.estadoActual = EstadoNPC.Caminando;
         enRuta = true;
         if (esPosReal) objetivos = Utilidades.GetPosicionesGrilla(objetivos, m_ciudad.transform);
-        List<Vector2> posiciones = GetRuta(GetPosActualGrilla(), objetivos, rerouting);
+        TreeNode nodoMasCercano;
+        List<Vector2> posiciones = GetRuta(GetPosActualGrilla(), objetivos, rerouting, out nodoMasCercano);
+        if (posiciones == null && nodoMasCercano != null)
+            posiciones = Utilidades.TransformarRuta(nodoMasCercano.ObtenerRutaDesdeOrigen());
         if (posiciones == null)
         {
             corutinaAux = StartCoroutine(Acercarse(GetObjetivoMasCercano(objetivos)));
@@ -363,9 +366,9 @@ public class PathfinderNPC : MonoBehaviour
         return false;
     }*/
 
-    private List<Vector2> GetRuta(Vector2 posInicial, List<Vector2> objetivos, bool considerarNPCS)
+    private List<Vector2> GetRuta(Vector2 posInicial, List<Vector2> objetivos, bool considerarNPCS, out TreeNode nodoMasCercano)
     {
-        return Utilidades.GetVectoresRuta(posInicial, objetivos, m_ciudad, considerarNPCS, this);
+        return Utilidades.GetVectoresRuta(posInicial, objetivos, m_ciudad, considerarNPCS, this, out nodoMasCercano);
     }
 
     IEnumerator GoRuta(List<Vector2> posicionesGrilla)
@@ -380,6 +383,7 @@ public class PathfinderNPC : MonoBehaviour
         SetRutaActual(posicionesGrilla);
         List<Vector2> nuevaRuta = null;
         int i = 1;
+        TreeNode nodoMasCercano;
         while (i < posicionesGrilla.Count)
         {
             if (rutaActual[posicionesGrilla[i - 1]] + 0.05f < Time.time)
@@ -392,7 +396,7 @@ public class PathfinderNPC : MonoBehaviour
                 //Comprobar movimiento normal
                 if (considerarNPCs && !tienePreferencia && !EsPosible(GetPosActualGrilla(), posicionesGrilla[i]))
                 {
-                    nuevaRuta = GetRuta(posicionesGrilla[i - 1], rutaOriginal, considerarNPCs);
+                    nuevaRuta = GetRuta(posicionesGrilla[i - 1], rutaOriginal, considerarNPCs, out nodoMasCercano);
                     if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i] != nuevaRuta[1])
                     {
                         Debug.Log("Ruta Alternativa");
@@ -412,7 +416,7 @@ public class PathfinderNPC : MonoBehaviour
             //Comprobar un mejor camino
             if (rerouting && i < posicionesGrilla.Count - 1)
             {
-                nuevaRuta = GetRuta(posicionesGrilla[i], rutaOriginal, considerarNPCs);
+                nuevaRuta = GetRuta(posicionesGrilla[i], rutaOriginal, considerarNPCs, out nodoMasCercano);
                 if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i + 1] != nuevaRuta[1] && nuevaRuta.Count < posicionesGrilla.Count - i)
                 {
                     //Debug.Log("Mejor Ruta!");
