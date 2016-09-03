@@ -136,13 +136,13 @@ public class Movimiento : MonoBehaviour
         edificioObjetivo.entradaLibre = false;
     }
 
-    private Edificio GetEdificioObjetivo()
+    public Edificio GetEdificioObjetivo()
     {
-        Edificio edificioObjetivo = edificiosObjetivos[0];
-        float distancia = Vector2.Distance(edificiosObjetivos[0].Entrada, transform.position);
-        float menorDistancia = distancia;
+        Edificio edificioObjetivo = null;
+        float distancia;
+        float menorDistancia = float.MaxValue;
 
-        for (int i = 1; i < edificiosObjetivos.Count; i++)
+        for (int i = 0; i < edificiosObjetivos.Count; i++)
         {
             distancia = Vector2.Distance(edificiosObjetivos[i].Entrada, transform.position);
             if (distancia < menorDistancia)

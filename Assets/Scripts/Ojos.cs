@@ -34,9 +34,16 @@ public class Ojos : MonoBehaviour
 
     private bool DebeEsquivar(NPC npc)
     {
-        if (npc.estadoActual == EstadoNPC.Entrando || npc.movimiento.saliendoEdificio) return true;
-        else if (pathfinderNpc.NpcEntrando() || m_npc.movimiento.saliendoEdificio) return false;
-        if (!pathfinderNpc.NpcCaminando()) return false;
+        if (npc.movimiento.GetEdificioObjetivo() == m_npc.movimiento.GetEdificioObjetivo())
+        {
+            if (m_npc.movimiento.saliendoEdificio || npc.movimiento.saliendoEdificio) return true;
+        }
+        else
+        {
+            if (npc.estadoActual == EstadoNPC.Entrando || npc.movimiento.saliendoEdificio) return true;
+            else if (m_npc.estadoActual == EstadoNPC.Entrando || m_npc.movimiento.saliendoEdificio) return false;
+        }
+        if (m_npc.estadoActual != EstadoNPC.Caminando) return false;
         else if (npc.estadoActual != EstadoNPC.Caminando) return true;
         else
         {
