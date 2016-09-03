@@ -83,8 +83,8 @@ public class Suelo : Data
         {
             case ESuelo.Camino: return 1;
             case ESuelo.Marmol: return 1.25f;
-            case ESuelo.Tierra: return 1.4f;
-            case ESuelo.Pasto: return 1.5f;
+            case ESuelo.Tierra: return 1.5f;
+            case ESuelo.Pasto: return 2f;
             case ESuelo.Arena: return 4f;
             default: return 0;
         }

@@ -196,7 +196,7 @@ public class PathfinderNPC : MonoBehaviour
         npc.estadoActual = EstadoNPC.Quieto;
         if (objetivo == GetPosActualGrilla())
             enRuta = false;
-        else corutinaAux = StartCoroutine("PedirPermiso", objetivo);
+        else corutinaAux = StartCoroutine(PedirPermiso(objetivo));
     }
 
     private Vector2 GetObjetivoIntermedioPosible(Vector2 objetivoFinal)
@@ -368,7 +368,7 @@ public class PathfinderNPC : MonoBehaviour
         return Utilidades.GetVectoresRuta(posInicial, objetivos, m_ciudad, considerarNPCS, this);
     }
 
-    private IEnumerator GoRuta(List<Vector2> posicionesGrilla)
+    IEnumerator GoRuta(List<Vector2> posicionesGrilla)
     {
         Vector3 posInicial = Utilidades.GetPosicionReal(posicionesGrilla[0], m_ciudad.transform);
         if (transform.position != posInicial)
