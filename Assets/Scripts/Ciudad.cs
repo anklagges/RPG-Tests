@@ -23,9 +23,9 @@ public class Ciudad : MonoBehaviour
     public Vector2 GetCaminoRandom()
     {
         List<Vector2> caminos = new List<Vector2>();
-        for (int x = 0; x < PosicionesActuales.Length; x++)
+        for (int x = 0; x < PosicionesActuales.GetLength(0); x++)
         {
-            for (int y = 0; y < PosicionesActuales.Length; y++)
+            for (int y = 0; y < PosicionesActuales.GetLength(1); y++)
             {
                 if ((ESuelo)PosicionesActuales[x, y] == ESuelo.Camino)
                     caminos.Add(new Vector2(x, y));
