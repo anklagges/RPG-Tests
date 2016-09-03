@@ -24,12 +24,6 @@ public class GeneradorSuelo : MonoBehaviour
 
     void Start()
     {
-        PathfinderNPC[] npcs = GameObject.FindObjectsOfType<PathfinderNPC>();
-        foreach (PathfinderNPC npc in npcs)
-        {
-            if (npc.transform.parent.parent.name != transform.parent.name || !npc.gameObject.activeSelf) continue;
-            m_ciudad.NPCs.Add(npc);
-        }
         // Time.timeScale = DatosTest.multiplicadorEscalaTiempo;
         suelo = new GameObject[ancho, alto];
         m_ciudad.PosicionesActuales = new int[ancho, alto];

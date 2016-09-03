@@ -103,10 +103,8 @@ public class PathfinderNPC : MonoBehaviour
 
     public void BuscarNuevaRuta(NPC otroNPC)
     {
-        Debug.Log("BUSCAR NUEVA");
         if (m_movimiento.m_movActual != null && !rerouting)
         {
-            Debug.Log("TRUE");
             tienePreferencia = false;
             m_movimiento.StopActual();
             if (corutinaAux != null) StopCoroutine(corutinaAux);
@@ -402,7 +400,7 @@ public class PathfinderNPC : MonoBehaviour
                     }
                     else
                     {
-                        if (npc.nombre == "Pepe") Debug.Log("WAT");
+                        //if (npc.nombre == "Pepe") Debug.Log("WAT");
                         corutinaAux = StartCoroutine(Acercarse(rutaOriginal.Last()));
                     }
                     yield break;

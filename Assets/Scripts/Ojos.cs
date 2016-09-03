@@ -21,7 +21,7 @@ public class Ojos : MonoBehaviour
             if (DebeEsquivar(npc))
             {
                 pathfinderNpc.BuscarNuevaRuta(npc);
-                Debug.Log(m_npc.name + " debe esquivar a " + npc.name);
+                //Debug.Log(m_npc.name + " debe esquivar a " + npc.name);
             }
         }
     }
