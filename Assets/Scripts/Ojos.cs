@@ -3,11 +3,13 @@ using System.Collections;
 
 public class Ojos : MonoBehaviour
 {
+    private NPC m_npc;
     private PathfinderNPC pathfinderNpc;
 
-    void Start()
+    public void Init()
     {
-        pathfinderNpc = transform.parent.GetComponent<PathfinderNPC>();
+        m_npc = GetComponentInParent<NPC>();
+        pathfinderNpc = m_npc.pathfinder;
     }
 
     void OnTriggerEnter2D(Collider2D col)
@@ -15,11 +17,11 @@ public class Ojos : MonoBehaviour
         if (col.tag == "NPC")
         {
             pathfinderNpc.ConsiderarNPCs(true);
-            PathfinderNPC npc = col.GetComponent<PathfinderNPC>();
+            NPC npc = col.GetComponent<NPC>();
             if (DebeEsquivar(npc))
             {
                 pathfinderNpc.BuscarNuevaRuta(npc);
-                //Debug.Log(pathfinderNpc.name + " debe esquivar a " + npc.name);
+                Debug.Log(m_npc.name + " debe esquivar a " + npc.name);
             }
         }
     }
@@ -30,16 +32,16 @@ public class Ojos : MonoBehaviour
             pathfinderNpc.ConsiderarNPCs(false);
     }
 
-    private bool DebeEsquivar(PathfinderNPC npc)
+    private bool DebeEsquivar(NPC npc)
     {
-        if (npc.NpcEntrando() || npc.saliendoEdificio) return true;
-        else if (pathfinderNpc.NpcEntrando() || pathfinderNpc.saliendoEdificio) return false;
+        if (npc.estadoActual == EstadoNPC.Entrando || npc.movimiento.saliendoEdificio) return true;
+        else if (pathfinderNpc.NpcEntrando() || m_npc.movimiento.saliendoEdificio) return false;
         if (!pathfinderNpc.NpcCaminando()) return false;
-        else if (!npc.NpcCaminando()) return true;
+        else if (npc.estadoActual != EstadoNPC.Caminando) return true;
         else
         {
-            if (pathfinderNpc.CasillasPorSegundo() > npc.CasillasPorSegundo()) return true;
-            else if (pathfinderNpc.CasillasPorSegundo() < npc.CasillasPorSegundo()) return false;
+            if (pathfinderNpc.CasillasPorSegundo() > npc.pathfinder.CasillasPorSegundo()) return true;
+            else if (pathfinderNpc.CasillasPorSegundo() < npc.pathfinder.CasillasPorSegundo()) return false;
             else return transform.position.x > npc.transform.position.x || (transform.position.x == npc.transform.position.x && transform.position.y > npc.transform.position.y);
         }
     }

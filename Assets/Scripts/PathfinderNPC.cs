@@ -5,30 +5,26 @@ using System.Linq;
 
 public class PathfinderNPC : MonoBehaviour
 {
-    public List<Edificio> edificiosObjetivos;
-    public Dictionary<Vector2, float> rutaActual;
+    public Dictionary<Vector2, float> rutaActual = new Dictionary<Vector2, float>();
     public int contadorEsperasRutaActual;
 
     //Componentes y Partes
-    private Pies pies;
     private NPC npc;
-    private BoxCollider2D col2D;
+    private Pies pies;
+    private Movimiento m_movimiento;
 
     //Auxiliares
     private Ciudad m_ciudad;
     private Coroutine corutinaAux;
-    private Coroutine corutinaMain;
-    public List<Vector2> posOcupadas;
-    private List<Vector2> rutaOriginal;
-    private int contadorNPCs;
-    public Vector2 objetivoRandom;
+    public List<Vector2> posOcupadas = new List<Vector2>();
+    public List<Vector2> rutaOriginal = new List<Vector2>();
+    private int contadorNPCs = 0;
 
     //Flags
-    private bool enRuta;
+    public bool enRuta;
     private bool rerouting;
     private bool considerarNPCs;
-    public bool saliendoEdificio;
-    private bool tienePreferencia;
+    private bool tienePreferencia = true;
 
     public Vector2 ultimaPosicion
     {
@@ -43,19 +39,13 @@ public class PathfinderNPC : MonoBehaviour
         }
     }
 
-    void Awake()
+    public void Init()
     {
-        tienePreferencia = true;
-        contadorNPCs = 0;
-        col2D = GetComponent<BoxCollider2D>();
-        rutaOriginal = new List<Vector2>();
-        rutaActual = new Dictionary<Vector2, float>();
-        m_ciudad = transform.parent.parent.GetComponent<Ciudad>();
-        npc = this.GetComponent<NPC>();
-        edificiosObjetivos = new List<Edificio>();
-        posOcupadas = new List<Vector2>();
+        npc = GetComponentInParent<NPC>();
+        m_ciudad = npc.ciudad;
+        pies = npc.pies;
+        m_movimiento = npc.movimiento;
         posOcupadas.Add(GetPosActualGrilla());
-        pies = transform.FindChild("Pies").GetComponent<Pies>();
     }
 
     void Update()
@@ -77,19 +67,9 @@ public class PathfinderNPC : MonoBehaviour
         return npc.estadoActual == EstadoNPC.Caminando;
     }
 
-    public bool NpcEsperando()
-    {
-        return npc.estadoActual == EstadoNPC.Esperando;
-    }
-
     public bool NpcEntrando()
     {
         return npc.estadoActual == EstadoNPC.Entrando;
-    }
-
-    public bool NpcOcupado()
-    {
-        return npc.estadoActual == EstadoNPC.Ocupado;
     }
 
     public void ConsiderarNPCs(bool considerar)
@@ -101,136 +81,37 @@ public class PathfinderNPC : MonoBehaviour
         if (considerarNPCs) tienePreferencia = true;
     }
 
-    public void BuscarNuevaRuta(PathfinderNPC otroNPC)
-    {
-        if (corutinaMain != null && !rerouting)
-        {
-            tienePreferencia = false;
-            StopCoroutine(corutinaMain);
-            if (corutinaAux != null) StopCoroutine(corutinaAux);
-            StartCoroutine("Reroute", otroNPC);
-        }
-    }
-
-    public void StartMoverToEdificios(List<Edificio> edificios)
-    {
-        if (!NpcEntrando() && !NpcOcupado())
-        {
-            PausarAnterior();
-            edificiosObjetivos.AddRange(edificios);
-            corutinaMain = StartCoroutine("MoverToEdificios");
-        }
-    }
-    private void PausarAnterior()
+    public void Stop()
     {
         rerouting = false;
-        if (corutinaMain != null) StopCoroutine(corutinaMain);
         if (corutinaAux != null) StopCoroutine(corutinaAux);
     }
 
-    public void StartMoverRandom()
+    public void SalirEdificio(Vector2 pos)
     {
-        //Debug.Log("MoverRandom");
-        PausarAnterior();
-        objetivoRandom = m_ciudad.GetCaminoRandom();
-        corutinaMain = StartCoroutine("MoverRandom");
+        posOcupadas.Add(pos);
+        SetRutaActual(pos);
     }
 
-    private IEnumerator MoverToEdificios()
+    public void EntrarEdificio()
     {
-        List<Vector2> posiciones = new List<Vector2>();
-        edificiosObjetivos.ForEach(x => posiciones.Add(x.Entrada));
-        if (pies.moviendo)
-            yield return new WaitWhile(() => pies.moviendo);
-        RutaTo(posiciones, true);
-        yield return new WaitWhile(() => enRuta);
-        corutinaMain = null;
-        rutaOriginal.Clear();
-        StartCoroutine("EntrarEdificio");
-    }
-
-    private IEnumerator EntrarEdificio()
-    {
-        npc.estadoActual = EstadoNPC.Entrando;
-        Edificio edificioObjetivo = GetEdificioObjetivo();
-        //Ponerse al frente de la entrada
-        if (edificioObjetivo.Entrada != transform.position)
-        {
-            pies.Mover(edificioObjetivo.Entrada);
-            yield return new WaitWhile(() => pies.moviendo);
-        }
-        //Entrar
-        pies.Mover(edificioObjetivo.Entrada + new Vector3(0, 0.5f));
-        npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
-        posOcupadas.Clear();
-        col2D.enabled = false;
-        pies.SetEnabledCol(false);
-        edificioObjetivo.entradaLibre = false;
-        yield return new WaitWhile(() => pies.moviendo);
-        edificioObjetivo.entradaLibre = true;
         tienePreferencia = true;
         rerouting = false;
         considerarNPCs = false;
         contadorNPCs = 0;
-        //Satisfacer Necesidad
-        npc.estadoActual = EstadoNPC.Ocupado;
-        yield return new WaitForSeconds(Utilidades.HorasRealesToSecsJuego(edificioObjetivo.horasDuracion));
-        npc.SatisfacerNecesidad(edificioObjetivo);
-        //Salir
-        saliendoEdificio = true;
-        Vector2 posSalida = Utilidades.GetPosicionGrilla(edificioObjetivo.Entrada, m_ciudad.transform);
-        yield return new WaitUntil(() => edificioObjetivo.entradaLibre && ComprobarObjetivo(posSalida));
-        npc.estadoActual = EstadoNPC.Caminando;
-        Vector3 posSalidaReal = Utilidades.GetPosicionReal(posSalida, m_ciudad.transform);
-        pies.SetEnabledCol(true);
-        col2D.enabled = true;
-        posOcupadas.Add(posSalida);
-        SetRutaActual(posSalida);
-        pies.Mover(posSalidaReal);
-        npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
-        edificioObjetivo.entradaLibre = false;
-        yield return new WaitWhile(() => pies.moviendo);
-        npc.estadoActual = EstadoNPC.Quieto;
-        edificioObjetivo.entradaLibre = true;
-        edificiosObjetivos.Remove(edificioObjetivo);
-        saliendoEdificio = false;
-        rutaActual.Clear();
-        SiguienteAccion();
     }
 
-    private Edificio GetEdificioObjetivo()
+    public void BuscarNuevaRuta(NPC otroNPC)
     {
-        Edificio edificioObjetivo = edificiosObjetivos[0];
-        float distancia = Vector2.Distance(edificiosObjetivos[0].Entrada, transform.position);
-        float menorDistancia = distancia;
-
-        for (int i = 1; i < edificiosObjetivos.Count; i++)
+        Debug.Log("BUSCAR NUEVA");
+        if (m_movimiento.m_movActual != null && !rerouting)
         {
-            distancia = Vector2.Distance(edificiosObjetivos[i].Entrada, transform.position);
-            if (distancia < menorDistancia)
-            {
-                menorDistancia = distancia;
-                edificioObjetivo = edificiosObjetivos[i];
-            }
+            Debug.Log("TRUE");
+            tienePreferencia = false;
+            m_movimiento.StopActual();
+            if (corutinaAux != null) StopCoroutine(corutinaAux);
+            StartCoroutine(Reroute(otroNPC.pathfinder));
         }
-
-        return edificioObjetivo;
-    }
-
-    private void SiguienteAccion()
-    {
-        if (!NpcEntrando() && !NpcOcupado())
-        {
-            if (edificiosObjetivos.Count > 0) corutinaMain = StartCoroutine("MoverToEdificios");
-            else if (npc.movimientosRandoms) corutinaMain = StartCoroutine("MoverRandom");
-        }
-        else npc.estadoActual = EstadoNPC.Quieto;
-    }
-
-    private IEnumerator MoverRandom()
-    {
-        RutaTo(new List<Vector2>() { objetivoRandom }, false);
-        yield return new WaitWhile(() => enRuta);
     }
 
     private IEnumerator Reroute(PathfinderNPC otroNPC)
@@ -255,18 +136,18 @@ public class PathfinderNPC : MonoBehaviour
             //Debug.Log("BACK ON TRACK!");
         }
         rerouting = false;
-        SiguienteAccion();
+        m_movimiento.SiguienteAccion();
     }
 
-    private void RutaTo(List<Vector2> objetivos, bool esPosReal)
+    public void RutaTo(List<Vector2> objetivos, bool esPosReal)
     {
         npc.estadoActual = EstadoNPC.Caminando;
         enRuta = true;
         if (esPosReal) objetivos = Utilidades.GetPosicionesGrilla(objetivos, m_ciudad.transform);
-        List<Vector2> posiciones = posiciones = GetRuta(GetPosActualGrilla(), objetivos, rerouting);
+        List<Vector2> posiciones = GetRuta(GetPosActualGrilla(), objetivos, rerouting);
         if (posiciones == null)
         {
-            corutinaAux = StartCoroutine("Acercarse", GetObjetivoMasCercano(objetivos));
+            corutinaAux = StartCoroutine(Acercarse(GetObjetivoMasCercano(objetivos)));
         }
         else
         {
@@ -275,7 +156,7 @@ public class PathfinderNPC : MonoBehaviour
                 tienePreferencia = false;
             }
             if (rerouting) rutaOriginal = objetivos;
-            corutinaAux = StartCoroutine("GoRuta", posiciones);
+            corutinaAux = StartCoroutine(GoRuta(posiciones));
         }
     }
 
@@ -365,9 +246,9 @@ public class PathfinderNPC : MonoBehaviour
                 {
                     if (!npcEsperado.NpcCaminando())
                     {
-                        npcEsperado.StartCoroutine("DejarPasar", GetObjetivoSiguiente(objetivoSiguiente, objetivo));
-                        corutinaAux = StartCoroutine("EsperarNPC", objetivoSiguiente);
-                        yield return new WaitWhile(() => NpcEsperando());
+                        npcEsperado.StartCoroutine(DejarPasar(GetObjetivoSiguiente(objetivoSiguiente, objetivo)));
+                        corutinaAux = StartCoroutine(EsperarNPC(objetivoSiguiente));
+                        yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Esperando);
                     }
                     else if (EsPosible(GetPosActualGrilla(), objetivoSiguiente))
                         MoverOcupar(objetivoSiguiente);
@@ -465,7 +346,7 @@ public class PathfinderNPC : MonoBehaviour
         }
     }
 
-    private bool ComprobarObjetivo(Vector2 objetivo)
+    public bool ComprobarObjetivo(Vector2 objetivo)
     {
         foreach (PathfinderNPC npc in m_ciudad.NPCs)
         {
@@ -517,12 +398,12 @@ public class PathfinderNPC : MonoBehaviour
                     if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i] != nuevaRuta[1])
                     {
                         Debug.Log("Ruta Alternativa");
-                        corutinaAux = StartCoroutine("GoRuta", nuevaRuta);
+                        corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
                     }
                     else
                     {
                         if (npc.nombre == "Pepe") Debug.Log("WAT");
-                        corutinaAux = StartCoroutine("Acercarse", rutaOriginal.Last());
+                        corutinaAux = StartCoroutine(Acercarse(rutaOriginal.Last()));
                     }
                     yield break;
                 }
@@ -537,7 +418,7 @@ public class PathfinderNPC : MonoBehaviour
                 if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i + 1] != nuevaRuta[1] && nuevaRuta.Count < posicionesGrilla.Count - i)
                 {
                     //Debug.Log("Mejor Ruta!");
-                    corutinaAux = StartCoroutine("GoRuta", nuevaRuta);
+                    corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
                     yield break;
                 }
             }

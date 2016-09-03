@@ -7,7 +7,8 @@ public class Pies : MonoBehaviour
     public bool moviendo;
 
     //Auxiliares
-    private Transform transCiudad;
+    private Ciudad ciudad;
+    private NPC npc;
     private PathfinderNPC pathfinder;
     private BoxCollider2D boxCollider2D;
     private Vector3 posMovimiento;
@@ -18,13 +19,14 @@ public class Pies : MonoBehaviour
     private Vector3 direccion;
     private bool removerAlFinalizar;
 
-    void Start()
+    public void Init()
     {
-        pathfinder = transform.parent.GetComponent<PathfinderNPC>();
+        npc = GetComponentInParent<NPC>();
+        pathfinder = npc.pathfinder;
         boxCollider2D = GetComponent<BoxCollider2D>();
-        rBody = transform.parent.GetComponent<Rigidbody2D>();
+        rBody = npc.GetComponent<Rigidbody2D>();
         posMovimiento = transform.position;
-        transCiudad = transform.parent.parent.parent;
+        ciudad = npc.ciudad;
     }
 
     public void Mover(Vector3 objetivo)
@@ -39,7 +41,7 @@ public class Pies : MonoBehaviour
     public void MoverOcupar(Vector2 objetivo)
     {
         pathfinder.posOcupadas.Add(objetivo);
-        Mover(Utilidades.GetPosicionReal(objetivo, transCiudad));
+        Mover(Utilidades.GetPosicionReal(objetivo, ciudad.transform));
         removerAlFinalizar = true;
     }
 

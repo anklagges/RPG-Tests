@@ -75,7 +75,7 @@ public class Utilidades : MonoBehaviour
             posFinales.Add(new Suelo(posObjetivos[i], posObjetivos[i], ciudad, considerarNPCs, npc));
         pathFinder.SetNodosFinales(posFinales.ToArray());
         List<TreeNode> ruta = pathFinder.GetRuta("A*", false);
-        DebugRuta(ruta);
+        //DebugRuta(ruta);
         List<Vector2> posiciones = new List<Vector2>();
         Suelo sueloSiguiente;
         try
