@@ -25,17 +25,41 @@ public class NPC : MonoBehaviour
     public EstadoNPC estadoActual { get; set; }
     public bool movimientosRandoms;
 
+    //Componentes
+    [HideInInspector]
+    public Movimiento movimiento;
+    [HideInInspector]
+    public PathfinderNPC pathfinder;
+    [HideInInspector]
+    public Pies pies;
+    [HideInInspector]
+    public Ojos ojos;
+    [HideInInspector]
+    public BoxCollider2D col2D;
+
     //Auxiliares
-    private PathfinderNPC pathFinder;
-    private Ciudad ciudad;
+    [HideInInspector]
+    public Ciudad ciudad;
     private const float limiteNecesidadHoras = 0.25f;
     private SpriteRenderer spriteRenderer;
 
+    void Awake()
+    {
+        ciudad = GetComponentInParent<Ciudad>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        movimiento = GetComponentInChildren<Movimiento>();
+        pathfinder = GetComponentInChildren<PathfinderNPC>();
+        pies = GetComponentInChildren<Pies>();
+        ojos = GetComponentInChildren<Ojos>();
+        col2D = GetComponent<BoxCollider2D>();
+        pies.Init();
+        pathfinder.Init();
+        movimiento.Init();
+        ojos.Init();
+    }
+
     void Start()
     {
-        pathFinder = this.GetComponent<PathfinderNPC>();
-        ciudad = transform.parent.parent.GetComponent<Ciudad>();
-        spriteRenderer = this.GetComponent<SpriteRenderer>();
         AgregarNecesidades();
         AgregarEdificiosUtiles();
         StartCoroutine("ComenzarNecesidades");
@@ -101,18 +125,18 @@ public class NPC : MonoBehaviour
                 {
                     if (necesidad.Valor <= Utilidades.HorasRealesToSecsJuego(limiteNecesidadHoras) && dinero >= necesidad.EdificioUtil.costo)
                     {
-                        if (!pathFinder.edificiosObjetivos.Contains(necesidad.EdificioUtil))
+                        if (!movimiento.edificiosObjetivos.Contains(necesidad.EdificioUtil))
                             edificiosUtiles.Add(necesidad.EdificioUtil);
                     }
                 }
                 if (edificiosUtiles.Count > 0)
                 {
-                    pathFinder.StartMoverToEdificios(edificiosUtiles);
+                    movimiento.StartMoverToEdificios(edificiosUtiles);
                     edificiosUtiles.Clear();
                 }
             }
             if (movimientosRandoms && estadoActual == EstadoNPC.Quieto)
-                pathFinder.StartMoverRandom();
+                movimiento.StartMoverRandom();
             yield return new WaitForSeconds(1);
         }
     }
