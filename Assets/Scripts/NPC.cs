@@ -24,6 +24,7 @@ public class NPC : MonoBehaviour
     public List<Necesidad> necesidades;
     public EstadoNPC estadoActual { get; set; }
     public bool movimientosRandoms;
+    public float velocidadMaxima;
 
     //Componentes
     [HideInInspector]
@@ -37,6 +38,11 @@ public class NPC : MonoBehaviour
     [HideInInspector]
     public BoxCollider2D col2D;
 
+    //Prefabs
+    public GameObject movimientoPrefab;
+    public GameObject piesPrefab;
+    public GameObject ojosPrefab;
+
     //Auxiliares
     [HideInInspector]
     public Ciudad ciudad;
@@ -47,15 +53,24 @@ public class NPC : MonoBehaviour
     {
         ciudad = GetComponentInParent<Ciudad>();
         spriteRenderer = GetComponent<SpriteRenderer>();
-        movimiento = GetComponentInChildren<Movimiento>();
+        movimiento = InstantiateComponent(movimientoPrefab).GetComponent<Movimiento>();
+        pies = InstantiateComponent(piesPrefab).GetComponent<Pies>();
+        ojos = InstantiateComponent(ojosPrefab).GetComponent<Ojos>();
         pathfinder = GetComponentInChildren<PathfinderNPC>();
-        pies = GetComponentInChildren<Pies>();
-        ojos = GetComponentInChildren<Ojos>();
         col2D = GetComponent<BoxCollider2D>();
         pies.Init();
         pathfinder.Init();
         movimiento.Init();
         ojos.Init();
+    }
+
+    private GameObject InstantiateComponent(GameObject prefab)
+    {
+        GameObject component = Instantiate(prefab);
+        component.transform.SetParent(transform);
+        component.transform.localPosition = Vector3.zero;
+        component.transform.localScale = Vector3.one;
+        return component;
     }
 
     void Start()

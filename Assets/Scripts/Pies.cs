@@ -3,7 +3,7 @@ using System.Collections;
 
 public class Pies : MonoBehaviour
 {
-    public float velocidadMaxima;
+    [HideInInspector]
     public bool moviendo;
 
     //Auxiliares
@@ -15,7 +15,6 @@ public class Pies : MonoBehaviour
     private Rigidbody2D rBody;
     private float ultimaDistancia;
     private float distanciaActual;
-    private Vector3 velocidadMovimiento;
     private Vector3 direccion;
     private bool removerAlFinalizar;
 
@@ -69,7 +68,7 @@ public class Pies : MonoBehaviour
             else
             {
                 direccion = posMovimiento - transform.position;
-                rBody.velocity = direccion.normalized * velocidadMaxima;
+                rBody.velocity = direccion.normalized * npc.velocidadMaxima;
             }
             ultimaDistancia = distanciaActual;
         }
@@ -92,7 +91,7 @@ public class Pies : MonoBehaviour
             if (m_velocidadMaximaReal == -1)
             {
                 float dragAux = 1 + rBody.drag * Time.fixedDeltaTime;
-                m_velocidadMaximaReal = velocidadMaxima / dragAux;
+                m_velocidadMaximaReal = npc.velocidadMaxima / dragAux;
             }
             return m_velocidadMaximaReal;
         }

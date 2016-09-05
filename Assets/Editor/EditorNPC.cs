@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEditor;
 
 [CustomEditor(typeof(NPC))]
+[CanEditMultipleObjects]
 public class EditorNPC : Editor
 {
     bool mostrarNecesidades = false;
