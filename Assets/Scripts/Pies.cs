@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+[RequireComponent(typeof(CircleCollider2D))]
 public class Pies : MonoBehaviour
 {
     [HideInInspector]
@@ -10,7 +11,7 @@ public class Pies : MonoBehaviour
     private Ciudad ciudad;
     private NPC npc;
     private PathfinderNPC pathfinder;
-    private BoxCollider2D boxCollider2D;
+    private CircleCollider2D boxCollider2D;
     private Vector3 posMovimiento;
     private Rigidbody2D rBody;
     private float ultimaDistancia;
@@ -22,7 +23,7 @@ public class Pies : MonoBehaviour
     {
         npc = GetComponentInParent<NPC>();
         pathfinder = npc.pathfinder;
-        boxCollider2D = GetComponent<BoxCollider2D>();
+        boxCollider2D = GetComponent<CircleCollider2D>();
         rBody = npc.GetComponent<Rigidbody2D>();
         posMovimiento = transform.position;
         ciudad = npc.ciudad;
