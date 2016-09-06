@@ -99,7 +99,7 @@ public class GeneradorSuelo : MonoBehaviour
         {
             for (int i = 1; i < contenedorEntradas.childCount; i++)
             {
-                foreach (Vector2 posicion in Utilidades.GetVectoresRuta(Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(0).position, m_ciudad.transform),
+                foreach (Vector2 posicion in PathFinder.GetVectoresRuta(Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(0).position, m_ciudad.transform),
                     new List<Vector2>() { Utilidades.GetPosicionGrilla(contenedorEntradas.GetChild(i).position, m_ciudad.transform) }, m_ciudad, false, null, out nodoMasCercano))
                 {
                     x = (int)posicion.x;
@@ -144,7 +144,7 @@ public class GeneradorSuelo : MonoBehaviour
             TreeNode nodoMasCercano;
             try
             {
-                foreach (Vector2 posicion in Utilidades.GetVectoresRuta(Utilidades.GetPosicionGrilla(edificio.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null, out nodoMasCercano))
+                foreach (Vector2 posicion in PathFinder.GetVectoresRuta(Utilidades.GetPosicionGrilla(edificio.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null, out nodoMasCercano))
                 {
                     x = (int)posicion.x;
                     y = (int)posicion.y;

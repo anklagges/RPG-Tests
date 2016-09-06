@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class PathFinder
 {
@@ -8,6 +9,57 @@ public class PathFinder
     public bool PermitirChicle { get; set; }
     public Dictionary<string, Data> PuntosClave { get; set; }
     public TreeNode nodoMasCercano;
+
+    public static List<Vector2> GetVectoresRuta(Vector2 posInicial, List<Vector2> posObjetivos, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc, out TreeNode nodoMasCercano)
+    {
+        PathFinder pathFinder = new PathFinder();
+        pathFinder.SetNodoInicial(new Suelo(posInicial, posObjetivos, ciudad, considerarNPCs, npc));
+        List<Suelo> posFinales = new List<Suelo>();
+        for (int i = 0; i < posObjetivos.Count; i++)
+            posFinales.Add(new Suelo(posObjetivos[i], posObjetivos[i], ciudad, considerarNPCs, npc));
+        pathFinder.SetNodosFinales(posFinales.ToArray());
+        List<TreeNode> ruta = pathFinder.GetRuta(false);
+        nodoMasCercano = pathFinder.nodoMasCercano;
+        DebugRuta(ruta);
+        return TransformarRuta(ruta);
+    }
+
+    public static List<Vector2> TransformarRuta(List<TreeNode> ruta)
+    {
+        List<Vector2> posiciones = new List<Vector2>();
+        Suelo sueloSiguiente;
+        try
+        {
+            for (int i = 0; i < ruta.Count; i++)
+            {
+                sueloSiguiente = (Suelo)ruta[i].Data;
+                posiciones.Add(sueloSiguiente.PosicionNPC);
+            }
+        }
+        catch
+        {
+            return null;
+        }
+        return posiciones;
+    }
+
+    private static void DebugRuta(List<TreeNode> ruta)
+    {
+        if (ruta != null)
+        {
+            /*Suelo sueloAux;
+            foreach (TreeNode nodo in ruta)
+            {
+                sueloAux = (Suelo)nodo.Data;
+                Debug.Log(sueloAux.Comparador);
+            }*/
+            Debug.Log("Acciones Ruta: " + (ruta.Count - 1));
+        }
+        else
+        {
+            Debug.LogWarning("No se encontro una ruta!");
+        }
+    }
 
     public void SetNodoInicial(Data data)
     {
