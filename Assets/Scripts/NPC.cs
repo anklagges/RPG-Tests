@@ -62,6 +62,7 @@ public class NPC : MonoBehaviour
         pathfinder.Init();
         movimiento.Init();
         ojos.Init();
+        ciudad.NPCs.Add(pathfinder);
     }
 
     private GameObject InstantiateComponent(GameObject prefab)

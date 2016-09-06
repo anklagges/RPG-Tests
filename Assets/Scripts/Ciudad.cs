@@ -10,16 +10,6 @@ public class Ciudad : MonoBehaviour
     public int[,] PosicionesActuales { get; set; }
     public List<PathfinderNPC> NPCs;
 
-    void Awake()
-    {
-        PathfinderNPC[] npcs = GetComponentsInChildren<PathfinderNPC>();
-        foreach (PathfinderNPC npc in npcs)
-        {
-            if (npc.gameObject.activeSelf)
-                NPCs.Add(npc);
-        }
-    }
-
     public Vector2 GetCaminoRandom()
     {
         List<Vector2> caminos = new List<Vector2>();
