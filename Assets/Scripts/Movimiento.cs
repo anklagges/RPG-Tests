@@ -122,7 +122,7 @@ public class Movimiento : MonoBehaviour
         edificioObjetivo.entradaLibre = true;
         edificiosObjetivos.Remove(edificioObjetivo);
         saliendoEdificio = false;
-        m_pathfinder.rutaActual.Clear();
+        m_pathfinder.ClearRutaActual();
         SiguienteAccion();
     }
 
