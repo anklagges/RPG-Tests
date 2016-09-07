@@ -3,6 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
+public class PosRutaActual
+{
+    public float m_tiempo;
+    public int m_vecesEsperado;
+
+    public PosRutaActual(float tiempo, int vecesEsperado)
+    {
+        m_tiempo = tiempo;
+        m_vecesEsperado = vecesEsperado;
+    }
+}
+
 public class PosRuta
 {
     public float m_tiempo;
@@ -17,9 +29,8 @@ public class PosRuta
 
 public class PathfinderNPC : MonoBehaviour
 {
-    public Dictionary<Vector2, float> rutaActual = new Dictionary<Vector2, float>();
+    public Dictionary<Vector2, PosRutaActual> rutaActual = new Dictionary<Vector2, PosRutaActual>();
     public PosRuta ultimaPosicion;
-    public int contadorEsperasRutaActual;
 
     //Componentes y Partes
     private NPC npc;
@@ -27,6 +38,7 @@ public class PathfinderNPC : MonoBehaviour
     private Movimiento m_movimiento;
 
     //Auxiliares
+    public string Nombre { get { return npc.nombre; } }
     private Ciudad m_ciudad;
     private Coroutine corutinaAux;
     public List<Vector2> posOcupadas = new List<Vector2>();
@@ -317,7 +329,7 @@ public class PathfinderNPC : MonoBehaviour
 
     private bool EsFuturaPosicion(Vector2 posicion)
     {
-        return rutaActual.ContainsKey(posicion) && rutaActual[posicion] > Time.time;
+        return rutaActual.ContainsKey(posicion) && rutaActual[posicion].m_tiempo > Time.time;
     }
 
     IEnumerator EsperarNPC(Vector2 objetivo)
@@ -382,7 +394,7 @@ public class PathfinderNPC : MonoBehaviour
         TreeNode nodoMasCercano;
         while (i < posicionesGrilla.Count)
         {
-            if (rutaActual[posicionesGrilla[i - 1]] + 0.05f < Time.time)
+            if (rutaActual[posicionesGrilla[i - 1]].m_tiempo + Suelo.c_margen < Time.time)
                 SetRutaActual(posicionesGrilla.GetRange(i - 1, posicionesGrilla.Count - i + 1));
             //Esperar?
             if (posicionesGrilla[i] == posicionesGrilla[i - 1])
@@ -437,7 +449,6 @@ public class PathfinderNPC : MonoBehaviour
         if (Vector2.Distance(objetivo, GetPosActualGrilla()) <= 1)
         {
             npc.estadoActual = EstadoNPC.Caminando;
-            contadorEsperasRutaActual = 0;
             ClearRutaActual();
             Vector2 posActual = GetPosActualGrilla();
             if (objetivo != posActual)
@@ -453,7 +464,6 @@ public class PathfinderNPC : MonoBehaviour
 
     private void SetRutaActual(Vector2 objetivo)
     {
-        contadorEsperasRutaActual = 0;
         ClearRutaActual();
         Vector2 posActual = GetPosActualGrilla();
         if (objetivo != posActual)
@@ -463,7 +473,9 @@ public class PathfinderNPC : MonoBehaviour
 
     private void AddRutaActual(Vector2 pos, float tiempo)
     {
-        rutaActual.Add(pos, tiempo);
+        if (!rutaActual.ContainsKey(pos))
+            rutaActual.Add(pos, new PosRutaActual(tiempo, 0));
+        else rutaActual[pos].m_vecesEsperado++;
         ultimaPosicion = new PosRuta(tiempo, pos);
     }
 
@@ -475,15 +487,8 @@ public class PathfinderNPC : MonoBehaviour
 
     private void SetRutaActual(List<Vector2> posicionesGrilla)
     {
-        contadorEsperasRutaActual = 0;
         ClearRutaActual();
         for (int p = 0; p < posicionesGrilla.Count; p++)
-        {
-            if (!rutaActual.ContainsKey(posicionesGrilla[p]))
-            {
-                AddRutaActual(posicionesGrilla[p], Time.time + (p / CasillasPorSegundo()));
-            }
-            else contadorEsperasRutaActual++;
-        }
+            AddRutaActual(posicionesGrilla[p], Time.time + (p / CasillasPorSegundo()));
     }
 }

@@ -24,6 +24,7 @@ public class Suelo : Data
     private Ciudad m_ciudad;
     private bool ConsiderarNPCs { get; set; }
     private int _profundidad;
+    public const float c_margen = 0.05f;
 
     public Suelo(Vector2 posPlayerActual, Vector2 posPlayerFinal, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc)
     {
@@ -110,10 +111,12 @@ public class Suelo : Data
 
     public bool EsPosible(int x, int y)
     {
-        float tiempoAccion, tiempoSwap, tiempoAux;
+        float tiempoAccion;
+        PosRutaActual tiempoSwap, tiempoAux;
         //Checar que no sea edifio
         if (m_ciudad.PosicionesActuales[x, y] == 0) return false;
 
+        DebugIf(x, y, "Es posible: " + x + "," + y);
         if (ConsiderarNPCs)
         {
             for (int i = 0; i < m_ciudad.NPCs.Count; i++)
@@ -127,24 +130,32 @@ public class Suelo : Data
                     {
                         tiempoAccion = Time.time + (1 + this.Profundidad) / NpcActual.CasillasPorSegundo();
                         //Checar que no vaya a haber otro npc en ese momento
-                        if (tiempoAccion >= tiempoAux - MedioTiempo(otroNPC) &&
-                            tiempoAccion <= tiempoAux + MedioTiempo(otroNPC) + 0.05f)
+                        float tiempoEntrada = tiempoAux.m_tiempo - c_margen - MedioTiempo(otroNPC);
+                        float tiempoSalida = tiempoAux.m_tiempo + c_margen + MedioTiempo(otroNPC) * (1 + tiempoAux.m_vecesEsperado);
+                        DebugIf(x, y, "DEBUG");
+                        if (tiempoAccion >= tiempoEntrada && tiempoAccion <= tiempoSalida)
+                        {
+                            DebugIf(x, y, "NO");
                             return false;
+                        }
                         //Checar si es Swap!
                         if (otroNPC.rutaActual.TryGetValue(PosicionNPC, out tiempoSwap))
                         {
                             //Checar que la ruta del npc no este contenida en la ruta del otro.
                             float tiempoInicialNPC = tiempoAccion - 2 * MedioTiempo(NpcActual);
                             //Se le agrega medio tiempo extra para permitir que salgan de sus tiles
-                            float tiempoInicialOtro = tiempoSwap - 3 * MedioTiempo(otroNPC);
-                            float tiempoFinalOtro = tiempoSwap + MedioTiempo(otroNPC);
+                            float tiempoInicialOtro = tiempoSwap.m_tiempo - 3 * MedioTiempo(otroNPC);
+                            float tiempoFinalOtro = tiempoSwap.m_tiempo + MedioTiempo(otroNPC);
                             if ((tiempoAccion <= tiempoFinalOtro && tiempoAccion >= tiempoInicialOtro) ||
                                 (tiempoInicialNPC <= tiempoFinalOtro && tiempoInicialNPC >= tiempoInicialOtro))
+                            {
+                                DebugIf(x, y, "NO");
                                 return false;
+                            }
                         }
                         //Checar si la posicion a ocupar sera la ultima del otro npc y que llegara despues que el. (Dado que el otro npc se quedara parado ahi)
                         if (otroNPC.ultimaPosicion.m_posicion == new Vector2(x, y) &&
-                            tiempoAccion > tiempoAux + MedioTiempo(otroNPC))
+                            tiempoAccion > tiempoAux.m_tiempo + MedioTiempo(otroNPC))
                             return false;
                     }
                 }
@@ -152,7 +163,16 @@ public class Suelo : Data
                     return false;
             }
         }
+        DebugIf(x, y, "SI");
         return true;
+    }
+
+    private void DebugIf(int x, int y, string mensaje)
+    {
+        if (x == 18 && y == 3)
+        {
+            //Debug.LogError(mensaje);
+        }
     }
 
     private float MedioTiempo(PathfinderNPC npc)
