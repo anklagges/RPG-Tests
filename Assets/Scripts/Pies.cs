@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(CircleCollider2D))]
 public class Pies : MonoBehaviour
@@ -11,22 +12,37 @@ public class Pies : MonoBehaviour
     private Ciudad ciudad;
     private NPC npc;
     private PathfinderNPC pathfinder;
-    private CircleCollider2D boxCollider2D;
+    private CircleCollider2D col2D;
     private Vector3 posMovimiento;
     private Rigidbody2D rBody;
     private float ultimaDistancia;
     private float distanciaActual;
     private Vector3 direccion;
     private bool removerAlFinalizar;
+    public float m_resistenciaActual;
+    private List<string> m_suelosAdjacentes = new List<string>();
+    public Dictionary<string, float> m_resistenciasSuelo = new Dictionary<string, float>();
 
     public void Init()
     {
         npc = GetComponentInParent<NPC>();
         pathfinder = npc.pathfinder;
-        boxCollider2D = GetComponent<CircleCollider2D>();
+        col2D = GetComponent<CircleCollider2D>();
         rBody = npc.GetComponent<Rigidbody2D>();
         posMovimiento = transform.position;
         ciudad = npc.ciudad;
+        LlenarResistencias();
+    }
+
+    void LlenarResistencias()
+    {
+        m_resistenciasSuelo.Add(ESuelo.Edificio.ToString(), 0);
+        m_resistenciasSuelo.Add(ESuelo.Personaje.ToString(), 0);
+        m_resistenciasSuelo.Add(ESuelo.Camino.ToString(), 0);
+        m_resistenciasSuelo.Add(ESuelo.Marmol.ToString(), -0.1f);
+        m_resistenciasSuelo.Add(ESuelo.Tierra.ToString(), 0.1f);
+        m_resistenciasSuelo.Add(ESuelo.Pasto.ToString(), 0.25f);
+        m_resistenciasSuelo.Add(ESuelo.Arena.ToString(), 0.5f);
     }
 
     public void Mover(Vector3 objetivo)
@@ -47,7 +63,8 @@ public class Pies : MonoBehaviour
 
     public void SetEnabledCol(bool enable)
     {
-        boxCollider2D.enabled = enable;
+        col2D.enabled = enable;
+        if (!enable) m_suelosAdjacentes.Clear();
     }
 
     void FixedUpdate()
@@ -69,7 +86,7 @@ public class Pies : MonoBehaviour
             else
             {
                 direccion = posMovimiento - transform.position;
-                rBody.velocity = direccion.normalized * npc.velocidadMaxima;
+                rBody.velocity = direccion.normalized * npc.velocidadMaxima * (1 - m_resistenciaActual);
             }
             ultimaDistancia = distanciaActual;
         }
@@ -95,6 +112,34 @@ public class Pies : MonoBehaviour
                 m_velocidadMaximaReal = npc.velocidadMaxima / dragAux;
             }
             return m_velocidadMaximaReal;
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D col)
+    {
+        if (col.tag == "Tile")
+        {
+            m_suelosAdjacentes.Add(col.name.Split('_')[0]);
+            UpdateResistenciaSuelo();
+        }
+    }
+
+    void OnTriggerExit2D(Collider2D col)
+    {
+        if (col.tag == "Tile")
+        {
+            m_suelosAdjacentes.Remove(col.name.Split('_')[0]);
+            UpdateResistenciaSuelo();
+        }
+    }
+
+    private void UpdateResistenciaSuelo()
+    {
+        m_resistenciaActual = 0;
+        for (int i = 0; i < m_suelosAdjacentes.Count; i++)
+        {
+            if (m_resistenciaActual < m_resistenciasSuelo[m_suelosAdjacentes[i]])
+                m_resistenciaActual = m_resistenciasSuelo[m_suelosAdjacentes[i]];
         }
     }
 }

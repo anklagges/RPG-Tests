@@ -11,6 +11,7 @@ public class TreeNode
     public TreeNode(Data data)
     {
         this.Data = data;
+        this.Data.Padre = null;
         this.Padre = null;
         this.Hijos = new List<TreeNode>();
         this.Data.Profundidad = 0;
@@ -19,6 +20,7 @@ public class TreeNode
     public TreeNode(Data data, TreeNode padre)
     {
         this.Data = data;
+        this.Data.Padre = padre.Data;
         this.Padre = padre;
         this.Hijos = new List<TreeNode>();
         this.Data.Profundidad = this.Padre.Data.Profundidad + 1;

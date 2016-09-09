@@ -70,7 +70,7 @@ public class GeneradorSuelo : MonoBehaviour
                 for (int x = posX + auxX; x < posX + edificio.Ancho / sueloSize; x++)
                 {
                     suelo[x, y].GetComponent<SpriteRenderer>().sprite = GetSpriteSuelo(edificio.suelo);
-                    suelo[x, y].name = edificio.suelo + " - Edificio";
+                    suelo[x, y].name = edificio.suelo + "_Edificio";
                     m_ciudad.PosicionesActuales[x, y] = 0;
                 }
             }
@@ -104,10 +104,10 @@ public class GeneradorSuelo : MonoBehaviour
                 {
                     x = (int)posicion.x;
                     y = (int)posicion.y;
-                    if (suelo[x, y].name != "Camino Principal")
+                    if (suelo[x, y].name != ESuelo.Camino.ToString())
                     {
                         suelo[x, y].GetComponent<SpriteRenderer>().sprite = camino;
-                        suelo[x, y].name = "Camino Principal";
+                        suelo[x, y].name = ESuelo.Camino.ToString();
                         m_ciudad.PosicionesActuales[x, y] = (int)ESuelo.Camino;
                         caminoPrincipalGrilla.Add(new Vector2(x, y));
                     }

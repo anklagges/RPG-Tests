@@ -34,7 +34,8 @@ public class PathfinderNPC : MonoBehaviour
 
     //Componentes y Partes
     private NPC npc;
-    private Pies pies;
+    [HideInInspector]
+    public Pies pies;
     private Movimiento m_movimiento;
 
     //Auxiliares
@@ -444,6 +445,17 @@ public class PathfinderNPC : MonoBehaviour
         return pies.GetVelocidadMaximaReal * 2;
     }
 
+    private float Resistencia(int x, int y)
+    {
+        ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[x, y];
+        return pies.m_resistenciasSuelo[tipo.ToString()];
+    }
+
+    public float TiempoPorCasilla(Vector2 pos)
+    {
+        return (1 + Resistencia((int)pos.x, (int)pos.y)) / CasillasPorSegundo();
+    }
+
     private void MoverOcupar(Vector2 objetivo)
     {
         if (Vector2.Distance(objetivo, GetPosActualGrilla()) <= 1)
@@ -453,7 +465,7 @@ public class PathfinderNPC : MonoBehaviour
             Vector2 posActual = GetPosActualGrilla();
             if (objetivo != posActual)
                 AddRutaActual(posActual, Time.time);
-            AddRutaActual(objetivo, Time.time + (1 / CasillasPorSegundo()));
+            AddRutaActual(objetivo, Time.time + TiempoPorCasilla(objetivo));
             pies.MoverOcupar(objetivo);
         }
         else
@@ -468,7 +480,7 @@ public class PathfinderNPC : MonoBehaviour
         Vector2 posActual = GetPosActualGrilla();
         if (objetivo != posActual)
             AddRutaActual(posActual, Time.time);
-        AddRutaActual(objetivo, Time.time + (1 / CasillasPorSegundo()));
+        AddRutaActual(objetivo, Time.time + TiempoPorCasilla(objetivo));
     }
 
     private void AddRutaActual(Vector2 pos, float tiempo)
@@ -488,7 +500,11 @@ public class PathfinderNPC : MonoBehaviour
     private void SetRutaActual(List<Vector2> posicionesGrilla)
     {
         ClearRutaActual();
+        float tiempoActumulado = Time.time;
         for (int p = 0; p < posicionesGrilla.Count; p++)
-            AddRutaActual(posicionesGrilla[p], Time.time + (p / CasillasPorSegundo()));
+        {
+            tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
+            AddRutaActual(posicionesGrilla[p], tiempoActumulado);
+        }
     }
 }

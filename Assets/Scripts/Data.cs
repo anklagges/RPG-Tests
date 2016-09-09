@@ -2,6 +2,7 @@
 
 public abstract class Data
 {
+    public Data Padre { get; set; }
     public string Comparador { get; set; }
     public float CostoAcumulado { get; set; }//Test si es mas eficiente
     public int Profundidad { get; set; }
