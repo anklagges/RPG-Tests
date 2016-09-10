@@ -133,6 +133,12 @@ public class Pies : MonoBehaviour
         }
     }
 
+
+    void OnCollisionEnter2D(Collision2D col)
+    {
+        Debug.Log("CHOQUE: " + npc.nombre + " -> " + col.gameObject.name);
+    }
+
     private void UpdateResistenciaSuelo()
     {
         m_resistenciaActual = 0;

@@ -249,7 +249,7 @@ public class PathfinderNPC : MonoBehaviour
                 {
                     if (!npcEsperado.NpcCaminando())
                     {
-                        Debug.Log(npcEsperado.npc.nombre);
+                        //Debug.Log(npcEsperado.npc.nombre);
                         npcEsperado.DejarPasar(objetivo);
                         corutinaAux = StartCoroutine(EsperarNPC(objetivoSiguiente));
                         yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Esperando);

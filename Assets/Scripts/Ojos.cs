@@ -52,9 +52,4 @@ public class Ojos : MonoBehaviour
             else return transform.position.x > npc.transform.position.x || (transform.position.x == npc.transform.position.x && transform.position.y > npc.transform.position.y);
         }
     }
-
-    void OnCollisionEnter2D(Collision2D col)
-    {
-        Debug.Log(col.gameObject.name);
-    }
 }

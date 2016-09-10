@@ -20,7 +20,7 @@ public class PathFinder
         pathFinder.SetNodosFinales(posFinales.ToArray());
         List<TreeNode> ruta = pathFinder.GetRuta(false);
         nodoMasCercano = pathFinder.nodoMasCercano;
-        //DebugRuta(ruta);
+        DebugRuta(ruta);
         return TransformarRuta(ruta);
     }
 
@@ -53,7 +53,7 @@ public class PathFinder
                 sueloAux = (Suelo)nodo.Data;
                 Debug.Log(sueloAux.Comparador);
             }*/
-            Debug.Log("Acciones Ruta: " + (ruta.Count - 1));
+            //Debug.Log("Acciones Ruta: " + (ruta.Count - 1));
         }
         else
         {
