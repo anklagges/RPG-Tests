@@ -7,6 +7,9 @@ public class Pies : MonoBehaviour
 {
     [HideInInspector]
     public bool moviendo;
+    [HideInInspector]
+    public float m_resistenciaActual;
+    public static Dictionary<string, float> m_resistenciasSuelo = new Dictionary<string, float>();
 
     //Auxiliares
     private Ciudad ciudad;
@@ -19,9 +22,7 @@ public class Pies : MonoBehaviour
     private float distanciaActual;
     private Vector3 direccion;
     private bool removerAlFinalizar;
-    public float m_resistenciaActual;
     private List<string> m_suelosAdjacentes = new List<string>();
-    public Dictionary<string, float> m_resistenciasSuelo = new Dictionary<string, float>();
 
     public void Init()
     {
@@ -36,18 +37,20 @@ public class Pies : MonoBehaviour
 
     void LlenarResistencias()
     {
-        m_resistenciasSuelo.Add(ESuelo.Edificio.ToString(), 0);
-        m_resistenciasSuelo.Add(ESuelo.Personaje.ToString(), 0);
-        m_resistenciasSuelo.Add(ESuelo.Camino.ToString(), 0);
-        m_resistenciasSuelo.Add(ESuelo.Marmol.ToString(), -0.1f);
-        m_resistenciasSuelo.Add(ESuelo.Tierra.ToString(), 0.1f);
-        m_resistenciasSuelo.Add(ESuelo.Pasto.ToString(), 0.25f);
-        m_resistenciasSuelo.Add(ESuelo.Arena.ToString(), 0.5f);
+        if (m_resistenciasSuelo.Count == 0)
+        {
+            m_resistenciasSuelo.Add(ESuelo.Edificio.ToString(), 0);
+            m_resistenciasSuelo.Add(ESuelo.Personaje.ToString(), 0);
+            m_resistenciasSuelo.Add(ESuelo.Camino.ToString(), 0);
+            m_resistenciasSuelo.Add(ESuelo.Marmol.ToString(), -0.1f);
+            m_resistenciasSuelo.Add(ESuelo.Tierra.ToString(), 0.1f);
+            m_resistenciasSuelo.Add(ESuelo.Pasto.ToString(), 0.25f);
+            m_resistenciasSuelo.Add(ESuelo.Arena.ToString(), 0.5f);
+        }
     }
 
     public void Mover(Vector3 objetivo)
     {
-        //rBody.constraints = RigidbodyConstraints2D.FreezeRotation;
         moviendo = true;
         ultimaDistancia = Mathf.Infinity;
         posMovimiento = objetivo;
@@ -77,10 +80,7 @@ public class Pies : MonoBehaviour
                 rBody.MovePosition(posMovimiento);
                 rBody.velocity = Vector3.zero;
                 if (removerAlFinalizar)
-                {
-                    //pathfinder.rutaActual.Remove(pathfinder.posOcupadas[0]);
                     pathfinder.posOcupadas.RemoveAt(0);
-                }
                 moviendo = false;
             }
             else

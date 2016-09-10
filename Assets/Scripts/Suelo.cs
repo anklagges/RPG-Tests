@@ -26,6 +26,24 @@ public class Suelo : Data
     private int m_profundidad;
     private float m_tiempoAcumulado;
     public const float c_margen = 0.05f;
+    private Data m_padre;
+    public override Data Padre
+    {
+        get { return m_padre; }
+        set
+        {
+            m_padre = value;
+            if (value != null)
+            {
+                CostoAcumulado = m_padre.CostoAcumulado + GetCostToNode((Suelo)m_padre);
+                if (NpcActual != null)
+                {
+                    ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[(int)PosicionNPC.x, (int)PosicionNPC.y];
+                    m_tiempoAcumulado = ((Suelo)Padre).m_tiempoAcumulado + Pies.m_resistenciasSuelo[tipo.ToString()] * NpcActual.TiempoPorCasilla(PosicionNPC);
+                }
+            }
+        }
+    }
 
     public Suelo(Vector2 posPlayerActual, Vector2 posPlayerFinal, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc)
     {
@@ -50,12 +68,8 @@ public class Suelo : Data
 
     private void Init()
     {
-        if (Padre != null)
-        {
-            ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[(int)PosicionNPC.x, (int)PosicionNPC.y];
-            m_tiempoAcumulado = ((Suelo)Padre).m_tiempoAcumulado + NpcActual.pies.m_resistenciasSuelo[tipo.ToString()] * NpcActual.TiempoPorCasilla(PosicionNPC);
-        }
-        else m_tiempoAcumulado = Time.time;
+        CostoAcumulado = 0;
+        m_tiempoAcumulado = Time.time;
         m_profundidad = this.Profundidad;
         ancho = m_ciudad.PosicionesActuales.GetLength(0);
         alto = m_ciudad.PosicionesActuales.GetLength(1);
@@ -80,11 +94,10 @@ public class Suelo : Data
         return (int)menor;
     }
 
-    public override float GetCostToNode(TreeNode nodo)
+    private float GetCostToNode(Suelo suelo)
     {
-        Suelo sueloObjetivo = (Suelo)nodo.Data;
-        if (sueloObjetivo.PosicionNPC == this.PosicionNPC) return 1;
-        ESuelo tipoSuelo = (ESuelo)m_ciudad.PosicionesActuales[(int)sueloObjetivo.PosicionNPC.x, (int)sueloObjetivo.PosicionNPC.y];
+        if (suelo.PosicionNPC == this.PosicionNPC) return 1;
+        ESuelo tipoSuelo = (ESuelo)m_ciudad.PosicionesActuales[(int)suelo.PosicionNPC.x, (int)suelo.PosicionNPC.y];
         switch (tipoSuelo)
         {
             case ESuelo.Camino: return 1;

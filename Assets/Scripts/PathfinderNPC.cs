@@ -448,7 +448,7 @@ public class PathfinderNPC : MonoBehaviour
     private float Resistencia(int x, int y)
     {
         ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[x, y];
-        return pies.m_resistenciasSuelo[tipo.ToString()];
+        return Pies.m_resistenciasSuelo[tipo.ToString()];
     }
 
     public float TiempoPorCasilla(Vector2 pos)

@@ -20,7 +20,7 @@ public class PathFinder
         pathFinder.SetNodosFinales(posFinales.ToArray());
         List<TreeNode> ruta = pathFinder.GetRuta(false);
         nodoMasCercano = pathFinder.nodoMasCercano;
-        DebugRuta(ruta);
+        //DebugRuta(ruta);
         return TransformarRuta(ruta);
     }
 
