@@ -139,7 +139,7 @@ public class Pies : MonoBehaviour
         if (col.gameObject.tag == "NPC")
         {
             NPC otroNPC = col.gameObject.GetComponent<NPC>();
-            if (otroNPC.ojos.DebeEsquivar(otroNPC))
+            if (otroNPC.ojos.DebeEsquivar(otroNPC, true))
             {
                 pathfinder.BuscarNuevaRuta(otroNPC);
                 Debug.Log("Nueva Ruta: " + npc.nombre);

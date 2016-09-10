@@ -102,12 +102,12 @@ public class Suelo : Data
 
     private float GetCostToNode(Suelo suelo)
     {
-        if (suelo.PosicionNPC == this.PosicionNPC) return 1;
+        if (suelo.PosicionNPC == this.PosicionNPC) return 0.4f;
         ESuelo tipoSuelo = (ESuelo)m_ciudad.PosicionesActuales[(int)suelo.PosicionNPC.x, (int)suelo.PosicionNPC.y];
         switch (tipoSuelo)
         {
+            case ESuelo.Marmol: return 0.9f;
             case ESuelo.Camino: return 1;
-            case ESuelo.Marmol: return 1.25f;
             case ESuelo.Tierra: return 1.5f;
             case ESuelo.Pasto: return 2f;
             case ESuelo.Arena: return 4f;
@@ -128,20 +128,50 @@ public class Suelo : Data
         return posiblesMovimientos;
     }
 
+    public static bool RutasCruzadas(List<Vector2> rutaA, List<Vector2> rutaB, Ciudad ciudad, PathfinderNPC npcA, PathfinderNPC npcB)
+    {
+        Suelo suelo;
+        if (npcB.ultimaPosicion == null)
+            return true;
+        Vector2 ultimaPos = npcB.ultimaPosicion.m_posicion;
+        for (int a = 0; a < rutaA.Count; a++)
+        {
+            for (int b = 0; b < rutaB.Count; b++)
+            {
+                if (Mathf.Abs(rutaA[a].x - rutaB[b].x) + Mathf.Abs(rutaA[a].y - rutaB[b].y) <= 1)
+                {
+                    suelo = new Suelo(rutaA[a], ultimaPos, ciudad, true, npcA);
+                    if (!suelo.EsPosible(npcB, rutaB[b]))
+                    {
+                        //Debug.LogError(rutaA[a] + " -> " + rutaB[b]);
+                        return true;
+                    }
+                }
+            }
+        }
+        //Debug.LogError("NO CRUZAN");
+        return false;
+    }
+
     public static bool EsPosible(Vector2 posInicial, Vector2 posObjetivo, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc)
     {
         Suelo suelo = new Suelo(posInicial, posObjetivo, ciudad, considerarNPCs, npc);
-        return suelo.EsPosible((int)posObjetivo.x, (int)posObjetivo.y);
+        return suelo.EsPosible(posObjetivo);
     }
 
-    public bool EsPosible(int x, int y)
+    private bool EsPosible(int x, int y)
     {
-        float tiempoAccion;
-        PosRutaActual tiempoSwap, tiempoAux;
+        return EsPosible(new Vector2(x, y));
+    }
+
+    public bool EsPosible(Vector2 pos)
+    {
         //Checar que no sea edifio
+        int x = (int)pos.x;
+        int y = (int)pos.y;
         if (m_ciudad.PosicionesActuales[x, y] == 0) return false;
 
-        DebugIf(x, y, "Es posible: " + x + "," + y);
+        //DebugIf(pos, "Es posible: " + x + "," + y);
         if (ConsiderarNPCs)
         {
             for (int i = 0; i < m_ciudad.NPCs.Count; i++)
@@ -150,54 +180,66 @@ public class Suelo : Data
                 if (otroNPC == NpcActual) continue;
                 if (otroNPC.NpcCaminando())
                 {
-                    //Checar si calzan los tiempos estimados
-                    if (otroNPC.rutaActual.TryGetValue(new Vector2(x, y), out tiempoAux))
-                    {
-                        tiempoAccion = m_tiempoAcumulado + NpcActual.TiempoPorCasilla(new Vector2(x, y));
-                        //Checar que no vaya a haber otro npc en ese momento
-                        float medioTiempoOtro = MedioTiempo(otroNPC, new Vector2(x, y));
-                        float tiempoEntrada = tiempoAux.m_tiempo - c_margen - medioTiempoOtro;
-                        float tiempoSalida = tiempoAux.m_tiempo + c_margen + medioTiempoOtro * (1 + tiempoAux.m_vecesEsperado);
-                        DebugIf(x, y, "DEBUG");
-                        if (tiempoAccion >= tiempoEntrada && tiempoAccion <= tiempoSalida)
-                        {
-                            DebugIf(x, y, "NO");
-                            return false;
-                        }
-                        //Checar si es Swap!
-                        if (otroNPC.rutaActual.TryGetValue(PosicionNPC, out tiempoSwap))
-                        {
-                            //Checar que la ruta del npc no este contenida en la ruta del otro.
-                            float tiempoInicialNPC = tiempoAccion - 2 * MedioTiempo(NpcActual, PosicionNPC);
-                            //Se le agrega medio tiempo extra para permitir que salgan de sus tiles
-                            float tiempoInicialOtro = tiempoSwap.m_tiempo - 3 * medioTiempoOtro;
-                            float tiempoFinalOtro = tiempoSwap.m_tiempo + medioTiempoOtro;
-                            if ((tiempoAccion <= tiempoFinalOtro && tiempoAccion >= tiempoInicialOtro) ||
-                                (tiempoInicialNPC <= tiempoFinalOtro && tiempoInicialNPC >= tiempoInicialOtro))
-                            {
-                                DebugIf(x, y, "NO");
-                                return false;
-                            }
-                        }
-                        //Checar si la posicion a ocupar sera la ultima del otro npc y que llegara despues que el. (Dado que el otro npc se quedara parado ahi)
-                        if (otroNPC.ultimaPosicion.m_posicion == new Vector2(x, y) &&
-                            tiempoAccion > tiempoAux.m_tiempo + medioTiempoOtro)
-                            return false;
-                    }
+                    if (!EsPosible(otroNPC, pos)) return false;
                 }
-                else if (otroNPC.posOcupadas.Contains(new Vector2(x, y)))
+                else if (otroNPC.posOcupadas.Contains(pos))
                     return false;
             }
         }
-        DebugIf(x, y, "SI");
+        //DebugIf(pos, "SI TOTAL");
         return true;
     }
 
-    private void DebugIf(int x, int y, string mensaje)
+    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos)
     {
-        if (x == 18 && y == 3)
+        float tiempoAccion;
+        PosRutaActual tiempoSwap, tiempoAux;
+        //Checar si calzan los tiempos estimados
+        if (otroNPC.rutaActual.TryGetValue(pos, out tiempoAux))
         {
-            //Debug.LogError(mensaje);
+            tiempoAccion = m_tiempoAcumulado + NpcActual.TiempoPorCasilla(pos);
+            //Checar que no vaya a haber otro npc en ese momento
+            float medioTiempoOtro = MedioTiempo(otroNPC, pos);
+            float tiempoEntrada = tiempoAux.m_tiempo - c_margen - medioTiempoOtro;
+            float tiempoSalida = tiempoAux.m_tiempo + c_margen + medioTiempoOtro * (1 + tiempoAux.m_vecesEsperado);
+            //DebugIf(pos, "DEBUG");
+            if (tiempoAccion >= tiempoEntrada && tiempoAccion <= tiempoSalida)
+            {
+                DebugIf(pos, "NO NORMAL");
+                return false;
+            }
+            //Checar si es Swap!
+            if (otroNPC.rutaActual.TryGetValue(PosicionNPC, out tiempoSwap))
+            {
+                //Checar que la ruta del npc no este contenida en la ruta del otro.
+                float tiempoInicialNPC = tiempoAccion - 2 * MedioTiempo(NpcActual, PosicionNPC);
+                //Se le agrega medio tiempo extra para permitir que salgan de sus tiles
+                float tiempoInicialOtro = tiempoSwap.m_tiempo - 3 * medioTiempoOtro;
+                float tiempoFinalOtro = tiempoSwap.m_tiempo + medioTiempoOtro;
+                if ((tiempoAccion <= tiempoFinalOtro && tiempoAccion >= tiempoInicialOtro) ||
+                    (tiempoInicialNPC <= tiempoFinalOtro && tiempoInicialNPC >= tiempoInicialOtro))
+                {
+                    DebugIf(pos, "NO SWAP");
+                    return false;
+                }
+            }
+            //Checar si la posicion a ocupar sera la ultima del otro npc y que llegara despues que el. (Dado que el otro npc se quedara parado ahi)
+            if (otroNPC.ultimaPosicion.m_posicion == pos &&
+                tiempoAccion > tiempoAux.m_tiempo + medioTiempoOtro)
+            {
+                DebugIf(pos, "ULTIMA POS");
+                return false;
+            }
+        }
+        //DebugIf(pos, "SI");
+        return true;
+    }
+
+    private void DebugIf(Vector2 pos, string mensaje)
+    {
+        // if (pos.x == 18 && pos.y == 3)
+        {
+            //Debug.LogError("POS: " + pos + " -> " + mensaje);
         }
     }
 
