@@ -33,15 +33,7 @@ public class Suelo : Data
         set
         {
             m_padre = value;
-            if (value != null)
-            {
-                CostoAcumulado = m_padre.CostoAcumulado + GetCostToNode((Suelo)m_padre);
-                if (NpcActual != null)
-                {
-                    ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[(int)PosicionNPC.x, (int)PosicionNPC.y];
-                    m_tiempoAcumulado = ((Suelo)Padre).m_tiempoAcumulado + Pies.m_resistenciasSuelo[tipo.ToString()] * NpcActual.TiempoPorCasilla(PosicionNPC);
-                }
-            }
+            if (value != null) InitPadreValues();
         }
     }
 
@@ -68,12 +60,26 @@ public class Suelo : Data
 
     private void Init()
     {
-        CostoAcumulado = 0;
-        m_tiempoAcumulado = Time.time;
+        if (Padre == null)
+        {
+            CostoAcumulado = 0;
+            m_tiempoAcumulado = Time.time;
+        }
+        else InitPadreValues();
         m_profundidad = this.Profundidad;
         ancho = m_ciudad.PosicionesActuales.GetLength(0);
         alto = m_ciudad.PosicionesActuales.GetLength(1);
         Comparador = GetComparador();
+    }
+
+    private void InitPadreValues()
+    {
+        CostoAcumulado = m_padre.CostoAcumulado + GetCostToNode((Suelo)m_padre);
+        if (NpcActual != null)
+        {
+            ESuelo tipo = (ESuelo)m_ciudad.PosicionesActuales[(int)PosicionNPC.x, (int)PosicionNPC.y];
+            m_tiempoAcumulado = ((Suelo)Padre).m_tiempoAcumulado + Pies.m_resistenciasSuelo[tipo.ToString()] * NpcActual.TiempoPorCasilla(PosicionNPC);
+        }
     }
 
     private string GetComparador()
