@@ -96,7 +96,7 @@ public class Movimiento : MonoBehaviour
         //Ponerse al frente de la entrada
         if (edificioObjetivo.Entrada != transform.position)
         {
-            Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada);
+            //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada);
             pies.Mover(edificioObjetivo.Entrada);
             yield return new WaitWhile(() => pies.moviendo);
         }
@@ -118,7 +118,7 @@ public class Movimiento : MonoBehaviour
         pies.SetEnabledCol(true);
         col2D.enabled = true;
         m_pathfinder.SalirEdificio(posSalida);
-        Debug.LogError(transform.position + " --> " + posSalidaReal);
+        //Debug.LogError(transform.position + " --> " + posSalidaReal);
         pies.Mover(posSalidaReal);
         npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
         edificioObjetivo.entradaLibre = false;

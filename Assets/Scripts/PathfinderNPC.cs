@@ -245,7 +245,7 @@ public class PathfinderNPC : MonoBehaviour
 
     IEnumerator PedirPermiso(Vector2 objetivo)
     {
-        Debug.Log("PEDIR PERMISO: " + npc.nombre);
+        //Debug.Log("PEDIR PERMISO: " + npc.nombre);
         npc.estadoActual = EstadoNPC.Quieto;
         PathfinderNPC npcEsperado = null;
         Vector2 objetivoSiguiente = GetObjetivoSiguiente(objetivo);
@@ -286,7 +286,7 @@ public class PathfinderNPC : MonoBehaviour
 
                 if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
                 {
-                    Debug.LogError(npc.nombre);
+                    //Debug.LogError(npc.nombre);
                     enRuta = false;
                     m_objetivoFinal = null;
                 }
@@ -501,7 +501,7 @@ public class PathfinderNPC : MonoBehaviour
             }
             i++;
         }
-        Debug.LogError(npc.nombre);
+        //Debug.LogError(npc.nombre);
         if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
         {
             enRuta = false;
