@@ -58,6 +58,11 @@ public class PathfinderNPC : MonoBehaviour
         m_ciudad = npc.ciudad;
         pies = npc.pies;
         m_movimiento = npc.movimiento;
+        AddPosActual();
+    }
+
+    private void AddPosActual()
+    {
         posOcupadas.Add(GetPosActualGrilla());
     }
 
@@ -313,6 +318,7 @@ public class PathfinderNPC : MonoBehaviour
         if (npc.estadoActual != EstadoNPC.Entrando && !EsFuturaPosicion(posFinalOtro))
         {
             Suelo sueloActual, sueloAux;
+            if (posOcupadas.Count == 0) AddPosActual();
             sueloActual = new Suelo(posOcupadas[0], posOcupadas[0], m_ciudad, true, this);
             foreach (Data posible in sueloActual.GetPosibles())
             {

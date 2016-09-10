@@ -10,6 +10,7 @@ public class Movimiento : MonoBehaviour
     private PathfinderNPC m_pathfinder;
     private BoxCollider2D col2D;
     private Pies pies;
+    private Ojos ojos;
 
     //Auxiliares
     private Ciudad m_ciudad;
@@ -25,6 +26,7 @@ public class Movimiento : MonoBehaviour
         m_ciudad = npc.ciudad;
         m_pathfinder = npc.pathfinder;
         pies = npc.pies;
+        ojos = npc.ojos;
     }
 
     private void PausarAnterior()
@@ -112,6 +114,7 @@ public class Movimiento : MonoBehaviour
         npc.estadoActual = EstadoNPC.Caminando;
         Vector3 posSalidaReal = Utilidades.GetPosicionReal(posSalida, m_ciudad.transform);
         pies.SetEnabledCol(true);
+        ojos.Enable(true);
         col2D.enabled = true;
         m_pathfinder.SalirEdificio(posSalida);
         pies.Mover(posSalidaReal);
@@ -131,6 +134,7 @@ public class Movimiento : MonoBehaviour
         pies.Mover(edificioObjetivo.Entrada + new Vector3(0, 0.5f));
         npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
         m_pathfinder.posOcupadas.Clear();
+        ojos.Enable(false);
         col2D.enabled = false;
         pies.SetEnabledCol(false);
         edificioObjetivo.entradaLibre = false;

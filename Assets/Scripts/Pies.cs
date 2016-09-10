@@ -133,10 +133,18 @@ public class Pies : MonoBehaviour
         }
     }
 
-
     void OnCollisionEnter2D(Collision2D col)
     {
-        Debug.Log("CHOQUE: " + npc.nombre + " -> " + col.gameObject.name);
+        //Debug.Log("CHOQUE: " + npc.nombre + " -> " + col.gameObject.name);
+        if (col.gameObject.tag == "NPC")
+        {
+            NPC otroNPC = col.gameObject.GetComponent<NPC>();
+            if (otroNPC.ojos.DebeEsquivar(otroNPC))
+            {
+                pathfinder.BuscarNuevaRuta(otroNPC);
+                Debug.Log("Nueva Ruta: " + npc.nombre);
+            }
+        }
     }
 
     private void UpdateResistenciaSuelo()

@@ -1,13 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
+[RequireComponent(typeof(PolygonCollider2D))]
 public class Ojos : MonoBehaviour
 {
     private NPC m_npc;
     private PathfinderNPC pathfinderNpc;
+    private List<NPC> m_npcsAdjacentes = new List<NPC>();
+    private PolygonCollider2D m_col2D;
 
     public void Init()
     {
+        m_col2D = GetComponent<PolygonCollider2D>();
         m_npc = GetComponentInParent<NPC>();
         pathfinderNpc = m_npc.pathfinder;
     }
@@ -17,10 +22,11 @@ public class Ojos : MonoBehaviour
         if (col.tag == "NPC")
         {
             pathfinderNpc.ConsiderarNPCs(true);
-            NPC npc = col.GetComponent<NPC>();
-            if (DebeEsquivar(npc))
+            NPC otroNPC = col.GetComponent<NPC>();
+            m_npcsAdjacentes.Add(otroNPC);
+            if (DebeEsquivar(otroNPC))
             {
-                pathfinderNpc.BuscarNuevaRuta(npc);
+                pathfinderNpc.BuscarNuevaRuta(otroNPC);
                 //Debug.Log(m_npc.name + " debe esquivar a " + npc.name);
             }
         }
@@ -29,27 +35,46 @@ public class Ojos : MonoBehaviour
     void OnTriggerExit2D(Collider2D col)
     {
         if (col.tag == "NPC")
-            pathfinderNpc.ConsiderarNPCs(false);
+        {
+            NPC otroNPC = col.GetComponent<NPC>();
+            RemoverNPC(otroNPC);
+        }
     }
 
-    private bool DebeEsquivar(NPC npc)
+    public void RemoverNPC(NPC otroNPC)
     {
-        if (npc.movimiento.GetEdificioObjetivo() == m_npc.movimiento.GetEdificioObjetivo())
+        pathfinderNpc.ConsiderarNPCs(false);
+        m_npcsAdjacentes.Remove(otroNPC);
+    }
+
+    public void Enable(bool enable)
+    {
+        m_col2D.enabled = enable;
+        if (!enable)
         {
-            if (m_npc.movimiento.saliendoEdificio || npc.movimiento.saliendoEdificio) return true;
+            for (int i = 0; i < m_npcsAdjacentes.Count; i++)
+                m_npcsAdjacentes[i].ojos.RemoverNPC(m_npc);
+        }
+    }
+
+    public bool DebeEsquivar(NPC otroNPC)
+    {
+        if (otroNPC.movimiento.GetEdificioObjetivo() == m_npc.movimiento.GetEdificioObjetivo())
+        {
+            if (m_npc.movimiento.saliendoEdificio || otroNPC.movimiento.saliendoEdificio) return true;
         }
         else
         {
-            if (npc.estadoActual == EstadoNPC.Entrando || npc.movimiento.saliendoEdificio) return true;
+            if (otroNPC.estadoActual == EstadoNPC.Entrando || otroNPC.movimiento.saliendoEdificio) return true;
             else if (m_npc.estadoActual == EstadoNPC.Entrando || m_npc.movimiento.saliendoEdificio) return false;
         }
         if (m_npc.estadoActual != EstadoNPC.Caminando) return false;
-        else if (npc.estadoActual != EstadoNPC.Caminando) return true;
+        else if (otroNPC.estadoActual != EstadoNPC.Caminando) return true;
         else
         {
-            if (pathfinderNpc.CasillasPorSegundo() > npc.pathfinder.CasillasPorSegundo()) return true;
-            else if (pathfinderNpc.CasillasPorSegundo() < npc.pathfinder.CasillasPorSegundo()) return false;
-            else return transform.position.x > npc.transform.position.x || (transform.position.x == npc.transform.position.x && transform.position.y > npc.transform.position.y);
+            if (pathfinderNpc.CasillasPorSegundo() > otroNPC.pathfinder.CasillasPorSegundo()) return true;
+            else if (pathfinderNpc.CasillasPorSegundo() < otroNPC.pathfinder.CasillasPorSegundo()) return false;
+            else return transform.position.x > otroNPC.transform.position.x || (transform.position.x == otroNPC.transform.position.x && transform.position.y > otroNPC.transform.position.y);
         }
     }
 }
