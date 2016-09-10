@@ -32,7 +32,7 @@ public class Movimiento : MonoBehaviour
     private void PausarAnterior()
     {
         StopActual();
-        m_pathfinder.Stop();
+        m_pathfinder.StopAux();
     }
 
     public void StopActual()
@@ -61,7 +61,7 @@ public class Movimiento : MonoBehaviour
 
     IEnumerator MoverRandom()
     {
-        m_pathfinder.RutaTo(new List<Vector2>() { objetivoRandom }, false);
+        m_pathfinder.RutaTo(objetivoRandom, false, true);
         yield return new WaitWhile(() => m_pathfinder.enRuta);
     }
     #endregion
@@ -82,7 +82,7 @@ public class Movimiento : MonoBehaviour
         List<Vector2> posiciones = new List<Vector2>();
         edificiosObjetivos.ForEach(x => posiciones.Add(x.Entrada));
         yield return new WaitWhile(() => pies.moviendo);
-        m_pathfinder.RutaTo(posiciones, true);
+        m_pathfinder.RutaTo(posiciones, true, true);
         yield return new WaitWhile(() => m_pathfinder.enRuta);
         m_movActual = null;
         m_pathfinder.rutaOriginal.Clear();
@@ -96,6 +96,7 @@ public class Movimiento : MonoBehaviour
         //Ponerse al frente de la entrada
         if (edificioObjetivo.Entrada != transform.position)
         {
+            Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada);
             pies.Mover(edificioObjetivo.Entrada);
             yield return new WaitWhile(() => pies.moviendo);
         }
@@ -109,14 +110,15 @@ public class Movimiento : MonoBehaviour
         npc.SatisfacerNecesidad(edificioObjetivo);
         //Salir
         saliendoEdificio = true;
+        ojos.Enable(true);
         Vector2 posSalida = Utilidades.GetPosicionGrilla(edificioObjetivo.Entrada, m_ciudad.transform);
         yield return new WaitUntil(() => edificioObjetivo.entradaLibre && m_pathfinder.ComprobarObjetivo(posSalida));
         npc.estadoActual = EstadoNPC.Caminando;
         Vector3 posSalidaReal = Utilidades.GetPosicionReal(posSalida, m_ciudad.transform);
         pies.SetEnabledCol(true);
-        ojos.Enable(true);
         col2D.enabled = true;
         m_pathfinder.SalirEdificio(posSalida);
+        Debug.LogError(transform.position + " --> " + posSalidaReal);
         pies.Mover(posSalidaReal);
         npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
         edificioObjetivo.entradaLibre = false;
@@ -131,6 +133,7 @@ public class Movimiento : MonoBehaviour
 
     private void Entrar(Edificio edificioObjetivo)
     {
+        //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada + new Vector3(0, 0.5f));
         pies.Mover(edificioObjetivo.Entrada + new Vector3(0, 0.5f));
         npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
         m_pathfinder.posOcupadas.Clear();

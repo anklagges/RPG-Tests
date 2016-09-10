@@ -153,18 +153,18 @@ public class Suelo : Data
         return false;
     }
 
-    public static bool EsPosible(Vector2 posInicial, Vector2 posObjetivo, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc)
+    public static bool EsPosible(Vector2 posInicial, Vector2 posObjetivo, Ciudad ciudad, bool considerarNPCs, PathfinderNPC npc, bool usarMargen = true)
     {
         Suelo suelo = new Suelo(posInicial, posObjetivo, ciudad, considerarNPCs, npc);
-        return suelo.EsPosible(posObjetivo);
+        return suelo.EsPosible(posObjetivo, usarMargen);
     }
 
-    private bool EsPosible(int x, int y)
+    private bool EsPosible(int x, int y, bool usarMargen = true)
     {
-        return EsPosible(new Vector2(x, y));
+        return EsPosible(new Vector2(x, y), usarMargen);
     }
 
-    public bool EsPosible(Vector2 pos)
+    public bool EsPosible(Vector2 pos, bool usarMargen = true)
     {
         //Checar que no sea edifio
         int x = (int)pos.x;
@@ -180,7 +180,7 @@ public class Suelo : Data
                 if (otroNPC == NpcActual) continue;
                 if (otroNPC.NpcCaminando())
                 {
-                    if (!EsPosible(otroNPC, pos)) return false;
+                    if (!EsPosible(otroNPC, pos, usarMargen)) return false;
                 }
                 else if (otroNPC.posOcupadas.Contains(pos))
                     return false;
@@ -190,7 +190,7 @@ public class Suelo : Data
         return true;
     }
 
-    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos)
+    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos, bool usarMargen = true)
     {
         float tiempoAccion;
         PosRutaActual tiempoSwap, tiempoAux;
@@ -200,8 +200,13 @@ public class Suelo : Data
             tiempoAccion = m_tiempoAcumulado + NpcActual.TiempoPorCasilla(pos);
             //Checar que no vaya a haber otro npc en ese momento
             float medioTiempoOtro = MedioTiempo(otroNPC, pos);
-            float tiempoEntrada = tiempoAux.m_tiempo - c_margen - medioTiempoOtro;
-            float tiempoSalida = tiempoAux.m_tiempo + c_margen + medioTiempoOtro * (1 + tiempoAux.m_vecesEsperado);
+            float tiempoEntrada = tiempoAux.m_tiempo - medioTiempoOtro;
+            float tiempoSalida = tiempoAux.m_tiempo + medioTiempoOtro * (1 + tiempoAux.m_vecesEsperado);
+            if (usarMargen)
+            {
+                tiempoEntrada -= c_margen;
+                tiempoSalida += c_margen;
+            }
             //DebugIf(pos, "DEBUG");
             if (tiempoAccion >= tiempoEntrada && tiempoAccion <= tiempoSalida)
             {
