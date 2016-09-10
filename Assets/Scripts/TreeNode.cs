@@ -26,11 +26,6 @@ public class TreeNode
         this.Data.Profundidad = this.Padre.Data.Profundidad + 1;
     }
 
-    public TreeNode Clone()
-    {
-        return (TreeNode)this.MemberwiseClone();
-    }
-
     public void AgregarHijo(TreeNode hijo)
     {
         this.Hijos.Add(hijo);
@@ -49,19 +44,6 @@ public class TreeNode
         return nodosRuta;
     }
 
-    /*Se obtiene al crear los nodos ahora!, Comprobar cual es mas eficiente
-    public int GetProfundidad()
-    {
-        int contador = 0;
-        TreeNode nodo = this;
-        while (nodo.Padre != null)
-        {
-            contador++;
-            nodo = nodo.Padre;
-        }
-        return contador;
-    }*/
-
     public float EvaluacionGreedy()
     {
         return Data.GetHeuristic();
@@ -69,13 +51,6 @@ public class TreeNode
 
     public float EvaluacionAStar()
     {
-        float costoAcumulado = 0;
-        TreeNode nodo = this;
-        do
-        {
-            costoAcumulado += nodo.Data.GetCostToNode(nodo.Padre);
-            nodo = nodo.Padre;
-        } while (nodo.Padre != null);
-        return Data.GetHeuristic() + costoAcumulado;
+        return Data.GetHeuristic() + Data.CostoAcumulado;
     }
 }

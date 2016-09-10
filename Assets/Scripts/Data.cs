@@ -2,12 +2,11 @@
 
 public abstract class Data
 {
-    public Data Padre { get; set; }
+    public abstract Data Padre { get; set; }
     public string Comparador { get; set; }
-    public float CostoAcumulado { get; set; }//Test si es mas eficiente
+    public float CostoAcumulado { get; set; }
     public int Profundidad { get; set; }
     public abstract int GetHeuristic();
-    public abstract float GetCostToNode(TreeNode nodo);
     public abstract List<Data> GetPosibles();
     public abstract bool Comparar(Data data);
 }
