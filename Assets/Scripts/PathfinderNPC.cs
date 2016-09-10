@@ -339,6 +339,12 @@ public class PathfinderNPC : MonoBehaviour
         return rutaActual.ContainsKey(posicion) && rutaActual[posicion].m_tiempo > Time.time;
     }
 
+    public List<Vector2> GetRutaFiltrada()
+    {
+        List<Vector2> ruta = new List<Vector2>(rutaActual.Keys);
+        return ruta.FindAll(x => EsFuturaPosicion(x));
+    }
+
     IEnumerator EsperarNPC(Vector2 objetivo)
     {
         //Debug.Log("ESPERAR: " + npc.nombre);
