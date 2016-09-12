@@ -90,7 +90,9 @@ public class Ojos : MonoBehaviour
         else
         {
             rutasCruzadas = Suelo.RutasCruzadas(pathfinderNpc.GetRutaFiltrada(), otroNPC.pathfinder.GetRutaFiltrada(), m_npc.ciudad, pathfinderNpc, otroNPC.pathfinder);
-            otroNPC.ojos.m_triggeredNPCs.Add(m_npc, rutasCruzadas);
+            if (otroNPC.ojos.m_triggeredNPCs.ContainsKey(m_npc))
+                otroNPC.ojos.m_triggeredNPCs[m_npc] = rutasCruzadas;
+            else otroNPC.ojos.m_triggeredNPCs.Add(m_npc, rutasCruzadas);
         }
         return rutasCruzadas;
     }

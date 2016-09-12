@@ -201,7 +201,7 @@ public class Suelo : Data
             //Checar que no vaya a haber otro npc en ese momento
             float medioTiempoOtro = MedioTiempo(otroNPC, pos);
             float tiempoEntrada = tiempoAux.m_tiempo - medioTiempoOtro;
-            float tiempoSalida = tiempoAux.m_tiempo + medioTiempoOtro * (1 + tiempoAux.m_vecesEsperado);
+            float tiempoSalida = tiempoAux.m_tiempo + medioTiempoOtro + otroNPC.TiempoEspera() * tiempoAux.m_vecesEsperado;
             if (usarMargen)
             {
                 tiempoEntrada -= c_margen;

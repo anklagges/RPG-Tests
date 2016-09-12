@@ -32,7 +32,7 @@ public class Movimiento : MonoBehaviour
     private void PausarAnterior()
     {
         StopActual();
-        m_pathfinder.StopAux();
+        m_pathfinder.StopActual();
     }
 
     public void StopActual()
