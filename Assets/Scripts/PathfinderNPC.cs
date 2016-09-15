@@ -580,4 +580,39 @@ public class PathfinderNPC : MonoBehaviour
             AddRutaActual(posicionesGrilla[p], tiempoActumulado);
         }
     }
+
+    void OnDrawGizmos()
+    {
+        Vector3 extra = Vector3.zero;
+        if (npc.nombre == "Paula")
+        {
+            Gizmos.color = Color.red;
+            extra = new Vector3(-0.05f, -0.05f);
+        }
+        else if (npc.nombre == "Francisca")
+        {
+            Gizmos.color = Color.magenta;
+            extra = new Vector3(0.05f, 0.05f);
+        }
+        else if (npc.nombre == "Roberto")
+        {
+            Gizmos.color = Color.grey;
+            extra = new Vector3(-0.1f, -0.1f);
+        }
+        else if (npc.nombre == "Pepe")
+        {
+            Gizmos.color = Color.white;
+            extra = new Vector3(0.1f, 0.1f);
+        }
+        if (rutaOriginal.Count > 0)
+        {
+            List<Vector3> rutaRealOriginal = new List<Vector3>();
+            for (int i = 0; i < rutaOriginal.Count; i++)
+                rutaRealOriginal.Add(Utilidades.GetPosicionReal(rutaOriginal[i], m_ciudad.transform));
+            for (int i = 0; i < rutaRealOriginal.Count - 1; i++)
+            {
+                Gizmos.DrawLine(rutaRealOriginal[i] + extra, rutaRealOriginal[i + 1] + extra);
+            }
+        }
+    }
 }
