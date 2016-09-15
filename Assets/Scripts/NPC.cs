@@ -8,8 +8,6 @@ public enum EstadoNPC
     Quieto,
     Esperando,
     Caminando,
-    Entrando,
-    Saliendo,
     Ocupado
 }
 
@@ -22,8 +20,10 @@ public class NPC : MonoBehaviour
     public int cantNecesidadesExtras;
     public int dinero;
     public List<Necesidad> necesidades;
+    private List<Necesidad> necesidadesInsatisfechas = new List<Necesidad>();
     public EstadoNPC estadoActual { get; set; }
     public bool movimientosRandoms;
+    public PosRutina[] m_rutina;
     public float velocidadMaxima;
 
     //Componentes
@@ -105,10 +105,10 @@ public class NPC : MonoBehaviour
         foreach (Edificio edificio in edificios)
         {
             if (edificio.transform.parent.name != ciudad.name || !edificio.gameObject.activeSelf) continue;
-            if (necesidades.Exists(x => x.Nombre == edificio.necesidad))
+            if (necesidades.Exists(x => x.Nombre == edificio.data.necesidad))
             {
-                Necesidad necesidad = necesidades.Find(x => x.Nombre == edificio.necesidad);
-                necesidad.EdificioUtil = edificio;
+                Necesidad necesidad = necesidades.Find(x => x.Nombre == edificio.data.necesidad);
+                necesidad.EdificioUtil = edificio.data;
             }
         }
     }
@@ -121,8 +121,15 @@ public class NPC : MonoBehaviour
             {
                 foreach (Necesidad necesidad in necesidades)
                 {
-                    necesidad.Valor -= 1;//TO.DO! Valor Necesidad
-                    if (necesidad.Valor < 0) necesidad.Valor = 0;
+                    if (necesidad.Valor >= 1)
+                    {
+                        necesidad.Valor -= 1;//TO.DO! Valor Necesidad
+                        if (!necesidadesInsatisfechas.Contains(necesidad) &&
+                            necesidad.Valor <= Utilidades.HorasRealesToSecsJuego(limiteNecesidadHoras))
+                        {
+                            necesidadesInsatisfechas.Add(necesidad);
+                        }
+                    }
                 }
             }
             yield return new WaitForSeconds(1);
@@ -131,33 +138,35 @@ public class NPC : MonoBehaviour
 
     private IEnumerator DefinirDestino()
     {
-        List<Edificio> edificiosUtiles = new List<Edificio>();
+        List<EdificioData> edificiosUtiles = new List<EdificioData>();
         yield return new WaitForSeconds(.5f);
         while (true)
         {
             if (estadoActual != EstadoNPC.Ocupado)
             {
-                foreach (Necesidad necesidad in necesidades)
+                for (int i = 0; i < necesidadesInsatisfechas.Count; i++)
                 {
-                    if (necesidad.Valor <= Utilidades.HorasRealesToSecsJuego(limiteNecesidadHoras) && dinero >= necesidad.EdificioUtil.costo)
+                    Necesidad necesidad = necesidadesInsatisfechas[i];
+                    if (dinero >= necesidad.EdificioUtil.costo)
                     {
-                        if (!movimiento.edificiosObjetivos.Contains(necesidad.EdificioUtil))
-                            edificiosUtiles.Add(necesidad.EdificioUtil);
+                        edificiosUtiles.Add(necesidad.EdificioUtil);
+                        necesidadesInsatisfechas.RemoveAt(i);
+                        i--;
                     }
                 }
                 if (edificiosUtiles.Count > 0)
                 {
-                    movimiento.StartMoverToEdificios(edificiosUtiles);
+                    movimiento.UpdateEdificiosUtiles(edificiosUtiles);
                     edificiosUtiles.Clear();
                 }
             }
             if (movimientosRandoms && estadoActual == EstadoNPC.Quieto)
-                movimiento.StartMoverRandom();
+                movimiento.StartRandom();
             yield return new WaitForSeconds(1);
         }
     }
 
-    public void SatisfacerNecesidad(Edificio edificio)
+    public void SatisfacerNecesidad(EdificioData edificio)
     {
         //TO.DO! Valor dependiende del edificio
         necesidades.Find(x => x.Nombre == edificio.necesidad).Valor += Utilidades.HorasRealesToSecsJuego(edificio.horasSatisfaccion);

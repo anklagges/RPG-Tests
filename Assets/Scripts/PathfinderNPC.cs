@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -108,10 +109,9 @@ public class PathfinderNPC : MonoBehaviour
 
     public void BuscarNuevaRuta(NPC otroNPC)
     {
-        if (m_movimiento.m_movActual != null && !rerouting)
+        if (!rerouting)
         {
             tienePreferencia = false;
-            m_movimiento.StopActual();
             if (corutinaAux != null) StopCoroutine(corutinaAux);
             StartCoroutine(Reroute(otroNPC.pathfinder));
         }
@@ -138,8 +138,12 @@ public class PathfinderNPC : MonoBehaviour
             yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);
             //Debug.Log("BACK ON TRACK!");
         }
+        /*RutaTo(rutaOriginal.Last(), false);
+        yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);*/
         rerouting = false;
-        m_movimiento.SiguienteAccion();
+        if (rutaOriginal.Count > 0)
+            RutaTo(rutaOriginal.Last(), false);
+        //m_movimiento.SiguienteAccion();
     }
 
     public void RutaTo(Vector2 objetivo, bool esPosReal, bool esObjetivoFinal = false)
@@ -221,7 +225,6 @@ public class PathfinderNPC : MonoBehaviour
             if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
             {
                 npc.estadoActual = EstadoNPC.Quieto;
-                Debug.LogError(npc.nombre);
                 enRuta = false;
                 m_objetivoFinal = null;
                 yield break;
@@ -347,7 +350,7 @@ public class PathfinderNPC : MonoBehaviour
 
     IEnumerator CoDejarPasar(Vector2 posFinalOtro)
     {
-        if (npc.estadoActual != EstadoNPC.Entrando)
+        if (npc.estadoActual != EstadoNPC.Ocupado)
         {
             yield return new WaitWhile(() => pies.moviendo);
             Suelo sueloActual, sueloAux;

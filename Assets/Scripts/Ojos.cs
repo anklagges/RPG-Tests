@@ -63,15 +63,9 @@ public class Ojos : MonoBehaviour
         if (m_npc.estadoActual != EstadoNPC.Caminando) return false;
         else if (otroNPC.estadoActual != EstadoNPC.Caminando) return true;
         if (!isCollision && !RutasCruzadas(otroNPC)) return false;
-        if (otroNPC.movimiento.GetEdificioObjetivo() == m_npc.movimiento.GetEdificioObjetivo())
-        {
-            if (m_npc.movimiento.saliendoEdificio || otroNPC.movimiento.saliendoEdificio) return true;
-        }
-        else
-        {
-            if (otroNPC.estadoActual == EstadoNPC.Entrando || otroNPC.movimiento.saliendoEdificio) return true;
-            else if (m_npc.estadoActual == EstadoNPC.Entrando || m_npc.movimiento.saliendoEdificio) return false;
-        }
+        int debeEsquivar = m_npc.movimiento.DebeEsquivar(otroNPC);
+        if (debeEsquivar == 1) return true;
+        else if (debeEsquivar == -1) return false;
 
         if (pathfinderNpc.CasillasPorSegundo() > otroNPC.pathfinder.CasillasPorSegundo()) return true;
         else if (pathfinderNpc.CasillasPorSegundo() < otroNPC.pathfinder.CasillasPorSegundo()) return false;
