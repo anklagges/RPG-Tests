@@ -578,7 +578,6 @@ public class PathfinderNPC : MonoBehaviour
     void OnDrawGizmos()
     {
         Vector3 extra = Vector3.zero;
-        //
         if (npc.nombre == "Francisca")
         {
             Gizmos.color = Color.red;
