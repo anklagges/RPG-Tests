@@ -234,7 +234,7 @@ public class MovimientoEdificio : PatronMovimiento
                     m_pathfinder.SalirEdificio(posSalida);
                     //Debug.LogError(transform.position + " --> " + posSalidaReal);
                     m_pies.Mover(posSalidaReal);
-                    m_npc.StartCoroutine("CambiarAlpha", (1 / (2 * m_pies.GetVelocidadMaximaReal)));
+                    m_npc.animador.CambiarAlpha(0.5f);
                     m_edificioObjetivo.entradaLibre = false;
                     m_estado = EEstado.Saliendo;
                 }
@@ -258,7 +258,7 @@ public class MovimientoEdificio : PatronMovimiento
     {
         //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada + new Vector3(0, 0.5f));
         m_pies.Mover(m_edificioObjetivo.Entrada + new Vector3(0, 0.5f));
-        m_npc.StartCoroutine("CambiarAlpha", (1 / (2 * m_pies.GetVelocidadMaximaReal)));
+        m_npc.animador.CambiarAlpha(0.5f);
         m_pathfinder.posOcupadas.Clear();
         m_npc.ojos.Enable(false);
         m_npc.col2D.enabled = false;

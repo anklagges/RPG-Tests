@@ -8,6 +8,8 @@ public class Pies : MonoBehaviour
     [HideInInspector]
     public bool moviendo;
     [HideInInspector]
+    public Vector3 direccion;
+    [HideInInspector]
     public float m_resistenciaActual;
     public static Dictionary<string, float> m_resistenciasSuelo = new Dictionary<string, float>();
 
@@ -20,7 +22,6 @@ public class Pies : MonoBehaviour
     private Rigidbody2D rBody;
     private float ultimaDistancia;
     private float distanciaActual;
-    private Vector3 direccion;
     private bool removerAlFinalizar;
     private List<string> m_suelosAdjacentes = new List<string>();
 

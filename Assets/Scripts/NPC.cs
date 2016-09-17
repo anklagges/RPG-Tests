@@ -37,6 +37,8 @@ public class NPC : MonoBehaviour
     [HideInInspector]
     public Ojos ojos;
     [HideInInspector]
+    public AnimadorNPC animador;
+    [HideInInspector]
     public BoxCollider2D col2D;
 
     //Prefabs
@@ -58,11 +60,13 @@ public class NPC : MonoBehaviour
         pies = InstantiateComponent(piesPrefab).GetComponent<Pies>();
         ojos = InstantiateComponent(ojosPrefab).GetComponent<Ojos>();
         pathfinder = GetComponentInChildren<PathfinderNPC>();
+        animador = GetComponentInChildren<AnimadorNPC>();
         col2D = GetComponent<BoxCollider2D>();
         pies.Init();
         pathfinder.Init();
         movimiento.Init();
         ojos.Init();
+        animador.Init();
         ciudad.NPCs.Add(pathfinder);
     }
 
@@ -179,19 +183,5 @@ public class NPC : MonoBehaviour
         //TO.DO! Valor dependiende del edificio
         necesidades.Find(x => x.Nombre == edificio.necesidad).Valor += Utilidades.HorasRealesToSecsJuego(edificio.horasSatisfaccion);
         dinero -= edificio.costo;
-    }
-
-    private IEnumerator CambiarAlpha(float tiempo)
-    {
-        Color colorActual = spriteRenderer.color;
-        int alphaNuevo = spriteRenderer.color.a == 1 ? 0 : 1;
-        Color colorNuevo = new Color(colorActual.r, colorActual.g, colorActual.b, alphaNuevo);
-        float t = 0;
-        while (spriteRenderer.color.a != alphaNuevo)
-        {
-            t += Time.deltaTime / tiempo;
-            spriteRenderer.color = Color.Lerp(colorActual, colorNuevo, t);
-            yield return new WaitForFixedUpdate();
-        }
     }
 }
