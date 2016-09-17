@@ -24,6 +24,7 @@ public class NPC : MonoBehaviour
     public EstadoNPC estadoActual { get; set; }
     public bool movimientosRandoms;
     public PosRutina[] m_rutina;
+    public bool m_posRealesRutina;
     public float velocidadMaxima;
 
     //Componentes
@@ -78,8 +79,8 @@ public class NPC : MonoBehaviour
     {
         AgregarNecesidades();
         AgregarEdificiosUtiles();
-        StartCoroutine("ComenzarNecesidades");
-        StartCoroutine("DefinirDestino");
+        StartCoroutine(ComenzarNecesidades());
+        StartCoroutine(DefinirDestino());
     }
 
     private void AgregarNecesidades()
@@ -138,8 +139,15 @@ public class NPC : MonoBehaviour
 
     private IEnumerator DefinirDestino()
     {
-        List<EdificioData> edificiosUtiles = new List<EdificioData>();
         yield return new WaitForSeconds(.5f);
+
+        if (necesidades.Count == 0 && m_rutina.Length > 0)
+        {
+            movimiento.StartRutina(m_rutina, m_posRealesRutina);
+            yield break;
+        }
+
+        List<EdificioData> edificiosUtiles = new List<EdificioData>();
         while (true)
         {
             if (estadoActual != EstadoNPC.Ocupado)

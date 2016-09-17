@@ -40,7 +40,6 @@ public class PathfinderNPC : MonoBehaviour
     public bool enRuta;
     private bool rerouting;
     private bool considerarNPCs;
-    private bool tienePreferencia = true;
 
     public void Init()
     {
@@ -72,7 +71,6 @@ public class PathfinderNPC : MonoBehaviour
         if (considerar) contadorNPCs++;
         else contadorNPCs--;
         considerarNPCs = contadorNPCs > 0;
-        if (considerarNPCs) tienePreferencia = true;
     }
 
     public void StopAux()
@@ -90,7 +88,6 @@ public class PathfinderNPC : MonoBehaviour
 
     public void EntrarEdificio()
     {
-        tienePreferencia = true;
         rerouting = false;
         considerarNPCs = false;
         contadorNPCs = 0;
@@ -100,7 +97,6 @@ public class PathfinderNPC : MonoBehaviour
     {
         if (!rerouting)
         {
-            tienePreferencia = false;
             if (corutinaAux != null) StopCoroutine(corutinaAux);
             StartCoroutine(Reroute(otroNPC.pathfinder));
         }
@@ -110,7 +106,8 @@ public class PathfinderNPC : MonoBehaviour
     {
         //rerouting = true;
         if (pies.moviendo) yield return new WaitWhile(() => pies.moviendo);
-        RutaTo(m_objetivoFinal.Value, false);
+        if (m_objetivoFinal.HasValue)
+            RutaTo(m_objetivoFinal.Value, false);
         /*float distancia = (Mathf.Abs(otroNPC.transform.position.x - transform.position.x) + Mathf.Abs(otroNPC.transform.position.y - transform.position.y));
         int espaciosExtras = Mathf.FloorToInt(distancia / GeneradorSuelo.sueloSize);
         if (espaciosExtras < 1) espaciosExtras = 1;
@@ -159,10 +156,6 @@ public class PathfinderNPC : MonoBehaviour
         }
         else
         {
-            if (!rerouting && considerarNPCs && posiciones.Count > 1 && !EsPosible(GetPosActualGrilla(), posiciones[1]))
-            {
-                tienePreferencia = false;
-            }
             if (rerouting) rutaOriginal = objetivos;
             if (esObjetivoFinal)
                 m_objetivoFinal = posiciones[posiciones.Count - 1];
@@ -261,7 +254,7 @@ public class PathfinderNPC : MonoBehaviour
                         if (!EsFuturaPosicion(objetivo))
                             npcEsperado.DejarPasar(objetivo);
                         EsperarNPC(objetivo);
-                        //yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Esperando);
+                        yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Esperando);
                     }
                     else if (EsPosibleMoverOcupar(GetPosActualGrilla(), objetivoSiguiente))
                         MoverOcupar(objetivoSiguiente);
@@ -456,7 +449,7 @@ public class PathfinderNPC : MonoBehaviour
             else
             {
                 //Movimiento Normal
-                if (!considerarNPCs || tienePreferencia || EsPosibleMoverOcupar(GetPosActualGrilla(), posicionesGrilla[i]))
+                if (!considerarNPCs || EsPosibleMoverOcupar(GetPosActualGrilla(), posicionesGrilla[i]))
                 {
                     pies.MoverOcupar(posicionesGrilla[i]);
                     yield return new WaitWhile(() => pies.moviendo);
@@ -494,14 +487,17 @@ public class PathfinderNPC : MonoBehaviour
             if (grillaRestante.Count > 0)
                 grillaRestante.RemoveAt(0);
         }
-        Debug.LogError(npc.nombre);
+        //Debug.LogError(npc.nombre);
+        npc.estadoActual = EstadoNPC.Quieto;
+        ClearRutaActual();
+
         if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
         {
             enRuta = false;
             m_objetivoFinal = null;
         }
-        npc.estadoActual = EstadoNPC.Quieto;
-        ClearRutaActual();
+        else if (m_objetivoFinal.HasValue) RutaTo(m_objetivoFinal.Value, false);
+        else Debug.LogWarning("FIN RUTA, NO FINAL");
     }
 
     public float CasillasPorSegundo()
@@ -630,7 +626,11 @@ public class PathfinderNPC : MonoBehaviour
     //Retorna la direccion a la ultima posicion en valores -1, 0 o 1
     public Vector2 DireccionObjetivo()
     {
-        Vector2 direccion = (ultimaPosicion.Value - GetPosActualGrilla()).normalized;
-        return new Vector2(Mathf.Sign(direccion.x), Mathf.Sign(direccion.y));
+        if (ultimaPosicion.HasValue)
+        {
+            Vector2 direccion = (ultimaPosicion.Value - GetPosActualGrilla()).normalized;
+            return new Vector2(Mathf.Sign(direccion.x), Mathf.Sign(direccion.y));
+        }
+        return Vector2.zero;
     }
 }

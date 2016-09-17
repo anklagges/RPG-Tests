@@ -35,10 +35,11 @@ public class Movimiento : MonoBehaviour
         m_pathfinder.StopAux();
     }
 
-    public void StartRutina(PosRutina[] rutina)
+    public void StartRutina(PosRutina[] rutina, bool posReales)
     {
-        m_patronActual = new MovimientoRutina(rutina);
+        m_patronActual = new MovimientoRutina();
         m_patronActual.Init(npc);
+        ((MovimientoRutina)m_patronActual).SetRutina(rutina, posReales);
     }
 
     public void UpdateEdificiosUtiles(List<EdificioData> edificios)
@@ -317,14 +318,16 @@ public class MovimientoRutina : PatronMovimiento
     private int m_indicePosSiguiente = 0;
     private float m_time;
 
-    public MovimientoRutina(PosRutina[] rutina)
+    public void SetRutina(PosRutina[] rutina, bool posReales)
     {
+        if (posReales)
+        {
+            for (int i = 0; i < rutina.Length; i++)
+            {
+                rutina[i].m_pos = Utilidades.GetPosicionGrilla(rutina[i].m_pos, m_ciudad.transform);
+            }
+        }
         m_rutina = rutina;
-    }
-
-    public override void Init(NPC npc)
-    {
-        base.Init(npc);
         GoNext();
     }
 
@@ -333,7 +336,7 @@ public class MovimientoRutina : PatronMovimiento
         switch (m_estado)
         {
             case EEstado.Moviendo:
-                if (!m_npc.pies.moviendo)
+                if (!m_npc.pathfinder.enRuta)
                 {
                     m_time = 0;
                     m_estado = EEstado.Esperando;
@@ -351,9 +354,9 @@ public class MovimientoRutina : PatronMovimiento
     private void GoNext()
     {
         m_actual = m_rutina[m_indicePosSiguiente];
-        m_npc.pathfinder.RutaTo(m_actual.m_pos, true, true);
+        m_npc.pathfinder.RutaTo(m_actual.m_pos, false, true);
         m_indicePosSiguiente++;
-        if (m_indicePosSiguiente > m_rutina.Length)
+        if (m_indicePosSiguiente >= m_rutina.Length)
             m_indicePosSiguiente = 0;
         m_estado = EEstado.Moviendo;
     }

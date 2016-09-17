@@ -33,13 +33,8 @@ public class Utilidades : MonoBehaviour
     public static List<Vector2> GetPosicionesGrilla(List<Vector2> posicionesReales, Transform ciudad)
     {
         List<Vector2> posicionesGrilla = new List<Vector2>();
-        int posY, posX;
         for (int i = 0; i < posicionesReales.Count; i++)
-        {
-            posY = Mathf.RoundToInt((posicionesReales[i].y - ciudad.position.y) / GeneradorSuelo.sueloSize);
-            posX = Mathf.RoundToInt((posicionesReales[i].x - ciudad.position.x) / GeneradorSuelo.sueloSize);
-            posicionesGrilla.Add(new Vector2(posX, posY));
-        }
+            posicionesGrilla.Add(GetPosicionGrilla(posicionesReales[i], ciudad));
         return posicionesGrilla;
     }
 }

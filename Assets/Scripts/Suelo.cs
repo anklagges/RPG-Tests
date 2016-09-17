@@ -131,10 +131,9 @@ public class Suelo : Data
     public static bool RutasCruzadas(List<Vector2> rutaA, List<Vector2> rutaB, Ciudad ciudad, PathfinderNPC npcA, PathfinderNPC npcB)
     {
         Suelo suelo;
-        /* if ((npcB.ultimaPosicion == null && npcB.posOcupadas.Count > 0) ||
-             (npcA.ultimaPosicion == null && npcA.posOcupadas.Count > 0))*/
-        if (npcB.ultimaPosicion == null)
-            return true;
+        //En teoria nunca deberia haber un personaje caminando sin ultima posicion que este caminando. (WIP) #TO.DO
+        if (npcB.ultimaPosicion == null) return true;
+        if (npcA.ultimaPosicion == null) return false;
         Vector2 posFinal = npcB.ultimaPosicion.Value;
         //Ignora la ultima posicion si ambos van hacia alla. TEST QUE PASA SI LA POS FINAL NO ES UN EDIFICIO!
         bool ignorarUltimaPos = npcA.ultimaPosicion.Value == npcB.ultimaPosicion.Value;

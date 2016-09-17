@@ -63,7 +63,7 @@ public class Ojos : MonoBehaviour
         if (m_npc.estadoActual != EstadoNPC.Caminando) return false;
         else if (otroNPC.estadoActual != EstadoNPC.Caminando) return true;
         if (!isCollision && !RutasCruzadas(otroNPC)) return false;
-        Debug.LogError(m_npc.nombre + " se cruzan con: " + otroNPC.nombre);
+        //Debug.Log(m_npc.nombre + " se cruzan con: " + otroNPC.nombre);
         int debeEsquivar = m_npc.movimiento.DebeEsquivar(otroNPC);
         if (debeEsquivar == 1) return true;
         else if (debeEsquivar == -1) return false;
@@ -82,13 +82,13 @@ public class Ojos : MonoBehaviour
             {
                 if (dirNPC.x != 0 || dirOtroNPC.x != 0)
                 {
-                    Debug.LogError(m_npc.nombre + " MISMA DIRECCION X: " + dirNPC.x);
+                    //Debug.Log(m_npc.nombre + " MISMA DIRECCION X: " + dirNPC.x);
                     return Vector2.Distance(transform.position, transform.position + new Vector3(dirNPC.x, 0)) <
                         Vector2.Distance(otroNPC.transform.position, otroNPC.transform.position + new Vector3(dirNPC.x, 0));
                 }
                 else
                 {
-                    Debug.LogError(m_npc.nombre + " MISMA DIRECCION Y: " + dirNPC.x);
+                    //Debug.Log(m_npc.nombre + " MISMA DIRECCION Y: " + dirNPC.x);
                     return Vector2.Distance(transform.position, transform.position + new Vector3(0, dirNPC.y)) <
                         Vector2.Distance(otroNPC.transform.position, otroNPC.transform.position + new Vector3(0, dirNPC.y));
                 }
