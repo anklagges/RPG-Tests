@@ -10,7 +10,7 @@ public class ControladorPathfinder
     protected Ciudad m_ciudad;
     protected PathfinderNPC m_pathfinder;
 
-    public abstract void Actualizar();
+    public virtual void Actualizar() { }
 
     public void Init(NPC npc, Ciudad ciudad)
     {
@@ -112,8 +112,8 @@ public class PedirPermiso : ControladorPathfinder
             m_pathfinder.MoverOcupar(m_objetivoSiguiente);
         else
         {
-            m_pathfinder.DejarPasar(m_npcEsperado.ultimaPosicion.m_posicion);
-            m_npcEsperado.EsperarNPC(m_npcEsperado.ultimaPosicion.m_posicion);
+            m_pathfinder.DejarPasar(m_npcEsperado.ultimaPosicion.Value);
+            m_npcEsperado.EsperarNPC(m_npcEsperado.ultimaPosicion.Value);
         }
         m_estado = EEstado.Actuar;
     }
@@ -228,7 +228,7 @@ public class DejarPasar : ControladorPathfinder
     public override void Actualizar()
     {
         if (m_npc.pies.moviendo) return;
-        if (m_npc.estadoActual != EstadoNPC.Entrando)
+        if (m_npc.estadoActual != EstadoNPC.Ocupado)
         {
             Suelo sueloActual, sueloAux;
             if (m_pathfinder.posOcupadas.Count == 0) m_pathfinder.AddPosActual();

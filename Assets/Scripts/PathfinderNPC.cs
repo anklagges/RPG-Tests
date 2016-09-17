@@ -101,6 +101,10 @@ public class PathfinderNPC : MonoBehaviour
         //if (m_movimiento.m_movActual != null)
         {
             //m_movimiento.StopActual();
+            /*if (!rerouting)
+            {
+                tienePreferencia = false;
+                if (corutinaAux != null) StopCoroutine(corutinaAux);*/
             StartCoroutine(Reroute(otroNPC.pathfinder));
         }
     }
@@ -210,11 +214,99 @@ public class PathfinderNPC : MonoBehaviour
         m_controladorActual.Init(npc, m_ciudad);
     }
 
+    /*IEnumerator CoAcercarse(Vector2 objetivo)
+    {
+        //Debug.Log("ACERCARSE: " + npc.nombre);
+        if (npc.nombre == "Pepe")
+        {
+            Debug.Log(GetPosActualGrilla());
+            Debug.Log(objetivo);
+        }
+        if (pies.moviendo)
+            yield return new WaitWhile(() => pies.moviendo);
+        ClearRutaActual();
+        Vector2 objetivoSiguiente = GetObjetivoSiguientePosible(objetivo);
+        while (objetivoSiguiente != GetPosActualGrilla())
+        {
+            MoverOcupar(objetivoSiguiente);
+            yield return new WaitWhile(() => pies.moviendo);
+            objetivoSiguiente = GetObjetivoSiguientePosible(objetivo);
+            if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
+            {
+                npc.estadoActual = EstadoNPC.Quieto;
+                enRuta = false;
+                m_objetivoFinal = null;
+                yield break;
+            }
+        }
+        corutinaAux = StartCoroutine(PedirPermiso(objetivo));
+    }*/
+
     public void PedirPermiso(Vector2 objetivo)
     {
         npc.estadoActual = EstadoNPC.Quieto;
         m_controladorActual = new PedirPermiso(objetivo);
         m_controladorActual.Init(npc, m_ciudad);
+        /*PathfinderNPC npcEsperado = null;
+        Vector2 objetivoSiguiente = GetObjetivoSiguiente(objetivo);
+        while (true)
+        {
+            npcEsperado = m_ciudad.NPCs.Find(x => x.posOcupadas.Contains(objetivoSiguiente));
+            if (npcEsperado != null)
+            {
+                while (true)
+                {
+                    if (npcEsperado.posOcupadas.Contains(GetPosActualGrilla()) || !npcEsperado.NpcCaminando() || EsPosible(GetPosActualGrilla(), objetivoSiguiente))
+                        break;
+                    yield return null;
+                }
+                yield return new WaitWhile(() => pies.moviendo);
+                if (GetPosActualGrilla().x - objetivoSiguiente.x == 0 || GetPosActualGrilla().y - objetivoSiguiente.y == 0)
+                {
+                    if (!npcEsperado.NpcCaminando())
+                    {
+                        //Debug.Log(npcEsperado.npc.nombre);
+                        if (!EsFuturaPosicion(objetivo))
+                            npcEsperado.DejarPasar(objetivo);
+                        EsperarNPC(objetivo);
+                        //yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Esperando);
+                    }
+                    else if (EsPosibleMoverOcupar(GetPosActualGrilla(), objetivoSiguiente))
+                        MoverOcupar(objetivoSiguiente);
+                    else
+                    {
+                        DejarPasar(npcEsperado.ultimaPosicion.Value);
+                        npcEsperado.EsperarNPC(npcEsperado.ultimaPosicion.Value);
+                        yield return new WaitWhile(() => npcEsperado.npc.estadoActual == EstadoNPC.Esperando);
+                    }
+
+                    yield return new WaitWhile(() => pies.moviendo);
+                }
+
+
+                if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
+                {
+                    //Debug.LogError(npc.nombre);
+                    enRuta = false;
+                    m_objetivoFinal = null;
+                }
+                else
+                {
+                    if (GetPosActualGrilla().x - objetivo.x != 0 && GetPosActualGrilla().y - objetivo.y != 0)
+                    {
+                        if (corutinaAux == null) RutaTo(objetivo, false);
+                    }
+                    else Acercarse(objetivo);
+                }
+                yield break;
+            }
+            else if (EsPosible(GetPosActualGrilla(), objetivo))
+            {
+                RutaTo(objetivo, false);
+                yield break;
+            }
+            yield return new WaitForSeconds(0.1f);
+        }*/
     }
 
     public void DejarPasar(Vector2 posFinalOtro)
@@ -241,6 +333,24 @@ public class PathfinderNPC : MonoBehaviour
     public bool EsPosible(Vector2 posInicial, Vector2 posFinal, bool usarMargen = true)
     {
         return Suelo.EsPosible(posInicial, posFinal, m_ciudad, considerarNPCs, this, usarMargen);
+        /*if (npc.estadoActual != EstadoNPC.Ocupado)
+        {
+            yield return new WaitWhile(() => pies.moviendo);
+            Suelo sueloActual, sueloAux;
+            if (posOcupadas.Count == 0) AddPosActual();
+            sueloActual = new Suelo(posOcupadas[0], posOcupadas[0], m_ciudad, true, this);
+            foreach (Data posible in sueloActual.GetPosibles())
+            {
+                sueloAux = (Suelo)posible;
+                if (sueloAux.PosicionNPC != posFinalOtro)
+                {
+                    MoverOcupar(sueloAux.PosicionNPC);
+                    yield return new WaitWhile(() => pies.moviendo);
+                    npc.estadoActual = EstadoNPC.Quieto;
+                    yield break;
+                }
+            }
+        }*/
     }
 
     public bool EsFuturaPosicion(Vector2 posicion)
@@ -283,6 +393,77 @@ public class PathfinderNPC : MonoBehaviour
     {
         return 1 / (2 * CasillasPorSegundo());
     }
+
+    /*Vector3 posInicial = Utilidades.GetPosicionReal(posicionesGrilla[0], m_ciudad.transform);
+    if (transform.position != posInicial)
+    {
+        //Debug.LogError(transform.position + " --> " + posInicial);
+        pies.Mover(posInicial);
+        yield return new WaitWhile(() => pies.moviendo);
+    }
+    if (!rerouting) rutaOriginal = posicionesGrilla;
+    List<Vector2> nuevaRuta = null;
+    int i = 1;
+    TreeNode nodoMasCercano;
+    List<Vector2> grillaRestante = new List<Vector2>(posicionesGrilla);
+    while (i < posicionesGrilla.Count)
+    {
+        SetRutaActual(grillaRestante);
+        //Esperar?
+        if (posicionesGrilla[i] == posicionesGrilla[i - 1])
+            yield return new WaitForSeconds(1 / pies.GetVelocidadMaximaReal);
+        else
+        {
+            //Movimiento Normal
+            if (!considerarNPCs || tienePreferencia || EsPosibleMoverOcupar(GetPosActualGrilla(), posicionesGrilla[i]))
+            {
+                pies.MoverOcupar(posicionesGrilla[i]);
+                yield return new WaitWhile(() => pies.moviendo);
+            }
+            else
+            {
+                nuevaRuta = GetRuta(posicionesGrilla[i - 1], rutaOriginal, considerarNPCs, out nodoMasCercano);
+                //if (nuevaRuta == null && nodoMasCercano != null)
+                //    nuevaRuta = PathFinder.TransformarRuta(nodoMasCercano.ObtenerRutaDesdeOrigen());
+                if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i] != nuevaRuta[1])
+                {
+                    Debug.Log("Ruta Alternativa");
+                    corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
+                }
+                else
+                {
+                    //if (npc.nombre == "Pepe") Debug.Log("WAT");
+                    Acercarse(ultimaPosicion.Value);
+                }
+                yield break;
+            }
+        }
+        //Comprobar un mejor camino
+        */
+    /*if (rerouting && i < posicionesGrilla.Count - 1)
+  {
+      nuevaRuta = GetRuta(posicionesGrilla[i], rutaOriginal, considerarNPCs, out nodoMasCercano);
+      if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i + 1] != nuevaRuta[1] && nuevaRuta.Count < posicionesGrilla.Count - i)
+      {
+          //Debug.Log("Mejor Ruta!");
+          corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
+          yield break;
+      }
+  }*/
+    /*
+ i++;
+ if (grillaRestante.Count > 0)
+     grillaRestante.RemoveAt(0);
+}
+Debug.LogError(npc.nombre);
+if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
+{
+ enRuta = false;
+ m_objetivoFinal = null;
+}
+npc.estadoActual = EstadoNPC.Quieto;
+ClearRutaActual();
+}*/
 
     public float CasillasPorSegundo()
     {
