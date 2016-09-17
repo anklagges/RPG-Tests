@@ -131,17 +131,30 @@ public class Suelo : Data
     public static bool RutasCruzadas(List<Vector2> rutaA, List<Vector2> rutaB, Ciudad ciudad, PathfinderNPC npcA, PathfinderNPC npcB)
     {
         Suelo suelo;
+        /* if ((npcB.ultimaPosicion == null && npcB.posOcupadas.Count > 0) ||
+             (npcA.ultimaPosicion == null && npcA.posOcupadas.Count > 0))*/
+        if (npcA.Nombre == "Roberto")
+        {
+            Debug.LogError("TEST");
+        }
         if (npcB.ultimaPosicion == null)
             return true;
-        Vector2 ultimaPos = npcB.ultimaPosicion.m_posicion;
+        Vector2 posFinal = npcB.ultimaPosicion.Value;
+        //Ignora la ultima posicion si ambos van hacia alla. TEST QUE PASA SI LA POS FINAL NO ES UN EDIFICIO!
+        bool ignorarUltimaPos = npcA.ultimaPosicion.Value == npcB.ultimaPosicion.Value;
+        if (ignorarUltimaPos)
+        {
+            rutaA.Remove(npcA.ultimaPosicion.Value);
+            rutaB.Remove(npcB.ultimaPosicion.Value);
+        }
         for (int a = 0; a < rutaA.Count; a++)
         {
             for (int b = 0; b < rutaB.Count; b++)
             {
-                if (Mathf.Abs(rutaA[a].x - rutaB[b].x) + Mathf.Abs(rutaA[a].y - rutaB[b].y) <= 1)
+                if (Mathf.Abs(rutaA[a].x - rutaB[b].x) + Mathf.Abs(rutaA[a].y - rutaB[b].y) == 1)
                 {
-                    suelo = new Suelo(rutaA[a], ultimaPos, ciudad, true, npcA);
-                    if (!suelo.EsPosible(npcB, rutaB[b]))
+                    suelo = new Suelo(rutaA[a], posFinal, ciudad, true, npcA);
+                    if (!suelo.EsPosible(npcB, rutaB[b], ignorarUltimaPos: ignorarUltimaPos))
                     {
                         //Debug.LogError(rutaA[a] + " -> " + rutaB[b]);
                         return true;
@@ -190,7 +203,7 @@ public class Suelo : Data
         return true;
     }
 
-    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos, bool usarMargen = true)
+    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos, bool usarMargen = true, bool ignorarUltimaPos = false)
     {
         float tiempoAccion;
         PosRutaActual tiempoSwap, tiempoAux;
@@ -229,7 +242,7 @@ public class Suelo : Data
                 }
             }
             //Checar si la posicion a ocupar sera la ultima del otro npc y que llegara despues que el. (Dado que el otro npc se quedara parado ahi)
-            if (otroNPC.ultimaPosicion.m_posicion == pos &&
+            if (!ignorarUltimaPos && otroNPC.ultimaPosicion.Value == pos &&
                 tiempoAccion > tiempoAux.m_tiempo + medioTiempoOtro)
             {
                 DebugIf(pos, "ULTIMA POS");

@@ -15,22 +15,11 @@ public class PosRutaActual
     }
 }
 
-public class PosRuta
-{
-    public float m_tiempo;
-    public Vector2 m_posicion;
-
-    public PosRuta(float tiempo, Vector2 pos)
-    {
-        m_tiempo = tiempo;
-        m_posicion = pos;
-    }
-}
-
 public class PathfinderNPC : MonoBehaviour
 {
     public Dictionary<Vector2, PosRutaActual> rutaActual = new Dictionary<Vector2, PosRutaActual>();
-    public PosRuta ultimaPosicion;
+    public Vector2? ultimaPosicion;
+    public Vector2? penultimaPosicion;
 
     //Componentes y Partes
     private NPC npc;
@@ -119,9 +108,10 @@ public class PathfinderNPC : MonoBehaviour
 
     private IEnumerator Reroute(PathfinderNPC otroNPC)
     {
-        rerouting = true;
+        //rerouting = true;
         if (pies.moviendo) yield return new WaitWhile(() => pies.moviendo);
-        float distancia = (Mathf.Abs(otroNPC.transform.position.x - transform.position.x) + Mathf.Abs(otroNPC.transform.position.y - transform.position.y));
+        RutaTo(m_objetivoFinal.Value, false);
+        /*float distancia = (Mathf.Abs(otroNPC.transform.position.x - transform.position.x) + Mathf.Abs(otroNPC.transform.position.y - transform.position.y));
         int espaciosExtras = Mathf.FloorToInt(distancia / GeneradorSuelo.sueloSize);
         if (espaciosExtras < 1) espaciosExtras = 1;
         int indice = rutaOriginal.FindIndex(x => x == posOcupadas[0]) + espaciosExtras;
@@ -137,12 +127,11 @@ public class PathfinderNPC : MonoBehaviour
             RutaTo(rutaOriginal.GetRange(indice, rutaOriginal.Count - indice), false);
             yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);
             //Debug.Log("BACK ON TRACK!");
-        }
+        }*/
         /*RutaTo(rutaOriginal.Last(), false);
         yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);*/
-        rerouting = false;
-        if (rutaOriginal.Count > 0)
-            RutaTo(rutaOriginal.Last(), false);
+        /*rerouting = false;
+        RutaTo(m_objetivoFinal.Value, false);*/
         //m_movimiento.SiguienteAccion();
     }
 
@@ -159,7 +148,7 @@ public class PathfinderNPC : MonoBehaviour
         if (esPosReal) objetivos = Utilidades.GetPosicionesGrilla(objetivos, m_ciudad.transform);
         TreeNode nodoMasCercano;
         Vector2 posActual = GetPosActualGrilla();
-        List<Vector2> posiciones = GetRuta(posActual, objetivos, rerouting, out nodoMasCercano);
+        List<Vector2> posiciones = GetRuta(posActual, objetivos, considerarNPCs, out nodoMasCercano);
         if (posiciones == null && nodoMasCercano != null)
             posiciones = PathFinder.TransformarRuta(nodoMasCercano.ObtenerRutaDesdeOrigen());
         if (posiciones == null || (posiciones.Count == 2 && posiciones[0] == posiciones[1]))
@@ -278,8 +267,8 @@ public class PathfinderNPC : MonoBehaviour
                         MoverOcupar(objetivoSiguiente);
                     else
                     {
-                        DejarPasar(npcEsperado.ultimaPosicion.m_posicion);
-                        npcEsperado.EsperarNPC(npcEsperado.ultimaPosicion.m_posicion);
+                        DejarPasar(npcEsperado.ultimaPosicion.Value);
+                        npcEsperado.EsperarNPC(npcEsperado.ultimaPosicion.Value);
                         yield return new WaitWhile(() => npcEsperado.npc.estadoActual == EstadoNPC.Esperando);
                     }
 
@@ -486,13 +475,13 @@ public class PathfinderNPC : MonoBehaviour
                     else
                     {
                         //if (npc.nombre == "Pepe") Debug.Log("WAT");
-                        Acercarse(ultimaPosicion.m_posicion);
+                        Acercarse(ultimaPosicion.Value);
                     }
                     yield break;
                 }
             }
             //Comprobar un mejor camino
-            if (rerouting && i < posicionesGrilla.Count - 1)
+            /*if (rerouting && i < posicionesGrilla.Count - 1)
             {
                 nuevaRuta = GetRuta(posicionesGrilla[i], rutaOriginal, considerarNPCs, out nodoMasCercano);
                 if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i + 1] != nuevaRuta[1] && nuevaRuta.Count < posicionesGrilla.Count - i)
@@ -501,10 +490,10 @@ public class PathfinderNPC : MonoBehaviour
                     corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
                     yield break;
                 }
-            }
+            }*/
             i++;
         }
-        //Debug.LogError(npc.nombre);
+        Debug.LogError(npc.nombre);
         if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
         {
             enRuta = false;
@@ -564,13 +553,15 @@ public class PathfinderNPC : MonoBehaviour
         if (!rutaActual.ContainsKey(pos))
             rutaActual.Add(pos, new PosRutaActual(tiempo, 0));
         else rutaActual[pos].m_vecesEsperado++;
-        ultimaPosicion = new PosRuta(tiempo, pos);
+        penultimaPosicion = ultimaPosicion;
+        ultimaPosicion = pos;
     }
 
     public void ClearRutaActual()
     {
         rutaActual.Clear();
         ultimaPosicion = null;
+        penultimaPosicion = null;
     }
 
     private void SetRutaActual(List<Vector2> posicionesGrilla)
@@ -582,5 +573,58 @@ public class PathfinderNPC : MonoBehaviour
             tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
             AddRutaActual(posicionesGrilla[p], tiempoActumulado);
         }
+    }
+
+    void OnDrawGizmos()
+    {
+        Vector3 extra = Vector3.zero;
+        if (npc.nombre == "Francisca")
+        {
+            Gizmos.color = Color.red;
+            extra = new Vector3(-0.05f, -0.05f);
+        }
+        else if (npc.nombre == "Paula")
+        {
+            Gizmos.color = Color.magenta;
+            extra = new Vector3(0.05f, 0.05f);
+        }
+        else if (npc.nombre == "Roberto")
+        {
+            Gizmos.color = Color.grey;
+            extra = new Vector3(-0.1f, -0.1f);
+        }
+        else if (npc.nombre == "Pepe")
+        {
+            Gizmos.color = Color.white;
+            extra = new Vector3(0.1f, 0.1f);
+        }
+        /*if (rutaOriginal.Count > 0)
+        {
+            List<Vector3> rutaReal = new List<Vector3>();
+            for (int i = 0; i < rutaOriginal.Count; i++)
+                rutaReal.Add(Utilidades.GetPosicionReal(rutaOriginal[i], m_ciudad.transform));
+            for (int i = 0; i < rutaReal.Count - 1; i++)
+            {
+                Gizmos.DrawLine(rutaReal[i] + extra, rutaReal[i + 1] + extra);
+            }
+        }*/
+        List<Vector2> rutaFiltrada = GetRutaFiltrada();
+        if (rutaFiltrada.Count > 0)
+        {
+            List<Vector3> rutaReal = new List<Vector3>();
+            for (int i = 0; i < rutaFiltrada.Count; i++)
+                rutaReal.Add(Utilidades.GetPosicionReal(rutaFiltrada[i], m_ciudad.transform));
+            for (int i = 0; i < rutaReal.Count - 1; i++)
+            {
+                Gizmos.DrawLine(rutaReal[i] + extra, rutaReal[i + 1] + extra);
+            }
+        }
+    }
+
+    //Retorna la direccion a la ultima posicion en valores -1, 0 o 1
+    public Vector2 DireccionObjetivo()
+    {
+        Vector2 direccion = (ultimaPosicion.Value - GetPosActualGrilla()).normalized;
+        return new Vector2(Mathf.Sign(direccion.x), Mathf.Sign(direccion.y));
     }
 }

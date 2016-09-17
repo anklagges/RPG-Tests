@@ -63,13 +63,38 @@ public class Ojos : MonoBehaviour
         if (m_npc.estadoActual != EstadoNPC.Caminando) return false;
         else if (otroNPC.estadoActual != EstadoNPC.Caminando) return true;
         if (!isCollision && !RutasCruzadas(otroNPC)) return false;
+        Debug.LogError(m_npc.nombre + " se cruzan con: " + otroNPC.nombre);
         int debeEsquivar = m_npc.movimiento.DebeEsquivar(otroNPC);
         if (debeEsquivar == 1) return true;
         else if (debeEsquivar == -1) return false;
 
         if (pathfinderNpc.CasillasPorSegundo() > otroNPC.pathfinder.CasillasPorSegundo()) return true;
         else if (pathfinderNpc.CasillasPorSegundo() < otroNPC.pathfinder.CasillasPorSegundo()) return false;
-        else return transform.position.x > otroNPC.transform.position.x || (transform.position.x == otroNPC.transform.position.x && transform.position.y > otroNPC.transform.position.y);
+        else
+        {
+            Vector2 dirNPC = pathfinderNpc.DireccionObjetivo();
+            Vector2 dirOtroNPC = otroNPC.pathfinder.DireccionObjetivo();
+            //En direccion perpendicular?
+            if ((dirNPC.x == 0 && dirOtroNPC.y == 0) || (dirNPC.y == 0 && dirOtroNPC.x == 0)) return false;
+            //Sin direcciones opuestas?
+            if ((dirNPC.x == dirOtroNPC.x || dirNPC.x == 0 || dirOtroNPC.x == 0) &&
+                (dirNPC.y == dirOtroNPC.y || dirNPC.y == 0 || dirOtroNPC.y == 0))
+            {
+                if (dirNPC.x != 0 || dirOtroNPC.x != 0)
+                {
+                    Debug.LogError(m_npc.nombre + " MISMA DIRECCION X: " + dirNPC.x);
+                    return Vector2.Distance(transform.position, transform.position + new Vector3(dirNPC.x, 0)) <
+                        Vector2.Distance(otroNPC.transform.position, otroNPC.transform.position + new Vector3(dirNPC.x, 0));
+                }
+                else
+                {
+                    Debug.LogError(m_npc.nombre + " MISMA DIRECCION Y: " + dirNPC.x);
+                    return Vector2.Distance(transform.position, transform.position + new Vector3(0, dirNPC.y)) <
+                        Vector2.Distance(otroNPC.transform.position, otroNPC.transform.position + new Vector3(0, dirNPC.y));
+                }
+            }
+            else return transform.position.x > otroNPC.transform.position.x || (transform.position.x == otroNPC.transform.position.x && transform.position.y > otroNPC.transform.position.y);
+        }
     }
 
     //Verifica si las rutas se cruzan, si el otro npc ya lo verifico entonces obtiene su valor.

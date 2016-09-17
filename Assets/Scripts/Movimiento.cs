@@ -155,8 +155,6 @@ public class MovimientoEdificio : PatronMovimiento
 
     private float m_time;
 
-    public MovimientoEdificio() { }
-
     public MovimientoEdificio(List<EdificioData> edificios)
     {
         m_objetivos = new List<EdificioData>(edificios);
