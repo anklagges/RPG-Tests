@@ -59,18 +59,19 @@ public class GeneradorSuelo : MonoBehaviour
         foreach (Edificio edificio in edificios)
         {
             if (edificio.transform.parent.name != transform.parent.name || !edificio.gameObject.activeSelf) continue;
-            int posY = Mathf.RoundToInt(edificio.PosicionRelativa.y / sueloSize);
+            EdificioData data = edificio.data;
+            int posY = Mathf.RoundToInt(data.PosicionRelativa.y / sueloSize);
             int auxY = 0;
-            if (edificio.PosicionRelativa.y % sueloSize >= sueloSize / 2) auxY--;
-            int posX = Mathf.RoundToInt(edificio.PosicionRelativa.x / sueloSize);
+            if (data.PosicionRelativa.y % sueloSize >= sueloSize / 2) auxY--;
+            int posX = Mathf.RoundToInt(data.PosicionRelativa.x / sueloSize);
             int auxX = 0;
-            if (edificio.PosicionRelativa.x % sueloSize >= sueloSize / 2) auxX--;
-            for (int y = posY + auxY; y < posY + edificio.Alto / sueloSize; y++)
+            if (data.PosicionRelativa.x % sueloSize >= sueloSize / 2) auxX--;
+            for (int y = posY + auxY; y < posY + data.Alto / sueloSize; y++)
             {
-                for (int x = posX + auxX; x < posX + edificio.Ancho / sueloSize; x++)
+                for (int x = posX + auxX; x < posX + data.Ancho / sueloSize; x++)
                 {
-                    suelo[x, y].GetComponent<SpriteRenderer>().sprite = GetSpriteSuelo(edificio.suelo);
-                    suelo[x, y].name = edificio.suelo + "_Edificio";
+                    suelo[x, y].GetComponent<SpriteRenderer>().sprite = GetSpriteSuelo(data.suelo);
+                    suelo[x, y].name = data.suelo + "_Edificio";
                     m_ciudad.PosicionesActuales[x, y] = 0;
                 }
             }
@@ -141,18 +142,19 @@ public class GeneradorSuelo : MonoBehaviour
         foreach (Edificio edificio in edificios)
         {
             if (edificio.transform.parent.name != transform.parent.name || !edificio.gameObject.activeSelf) continue;
+            EdificioData data = edificio.data;
             TreeNode nodoMasCercano;
             try
             {
-                foreach (Vector2 posicion in PathFinder.GetVectoresRuta(Utilidades.GetPosicionGrilla(edificio.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null, out nodoMasCercano))
+                foreach (Vector2 posicion in PathFinder.GetVectoresRuta(Utilidades.GetPosicionGrilla(data.Entrada, m_ciudad.transform), caminoPrincipalGrilla, m_ciudad, false, null, out nodoMasCercano))
                 {
                     x = (int)posicion.x;
                     y = (int)posicion.y;
-                    if (m_ciudad.PosicionesActuales[x, y] > (int)edificio.suelo)
+                    if (m_ciudad.PosicionesActuales[x, y] > (int)data.suelo)
                     {
-                        suelo[x, y].GetComponent<SpriteRenderer>().sprite = GetSpriteSuelo(edificio.suelo);
-                        suelo[x, y].name = edificio.suelo.ToString();
-                        m_ciudad.PosicionesActuales[x, y] = (int)edificio.suelo;
+                        suelo[x, y].GetComponent<SpriteRenderer>().sprite = GetSpriteSuelo(data.suelo);
+                        suelo[x, y].name = data.suelo.ToString();
+                        m_ciudad.PosicionesActuales[x, y] = (int)data.suelo;
                     }
                 }
             }

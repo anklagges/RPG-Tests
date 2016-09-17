@@ -1,11 +1,10 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 public class Movimiento : MonoBehaviour
 {
-    public List<Edificio> edificiosObjetivos = new List<Edificio>();
-
     private NPC npc;
     private PathfinderNPC m_pathfinder;
     private BoxCollider2D col2D;
@@ -14,10 +13,7 @@ public class Movimiento : MonoBehaviour
 
     //Auxiliares
     private Ciudad m_ciudad;
-    public Vector2 objetivoRandom;
-    public Coroutine m_movActual;
-
-    public bool saliendoEdificio;
+    public PatronMovimiento m_patronActual;
 
     public void Init()
     {
@@ -29,137 +25,343 @@ public class Movimiento : MonoBehaviour
         ojos = npc.ojos;
     }
 
+    void Update()
+    {
+        if (m_patronActual != null) m_patronActual.Update();
+    }
+
     private void PausarAnterior()
     {
-        StopActual();
         m_pathfinder.StopAux();
     }
 
-    public void StopActual()
+    public void StartRutina(PosRutina[] rutina)
     {
-        if (m_movActual != null) StopCoroutine(m_movActual);
+        m_patronActual = new MovimientoRutina(rutina);
+        m_patronActual.Init(npc);
+    }
+
+    public void UpdateEdificiosUtiles(List<EdificioData> edificios)
+    {
+        if (m_patronActual == null)
+        {
+            m_patronActual = new MovimientoEdificio(edificios);
+            m_patronActual.Init(npc);
+        }
+        else
+        {
+            MovimientoEdificio mov = m_patronActual as MovimientoEdificio;
+            mov.AddObjetivos(edificios);
+        }
+    }
+
+    public void StartRandom()
+    {
+        m_patronActual = new MovimientoRandom();
+        m_patronActual.Init(npc);
     }
 
     public void SiguienteAccion()
     {
-        if (npc.estadoActual != EstadoNPC.Entrando && npc.estadoActual != EstadoNPC.Ocupado)
+        if (npc.estadoActual != EstadoNPC.Ocupado)
         {
-            if (edificiosObjetivos.Count > 0) m_movActual = StartCoroutine(MoverToEdificios());
-            else if (npc.movimientosRandoms) m_movActual = StartCoroutine(MoverRandom());
+            /*if (m_patronActual != null && m_patronActual is MovimientoEdificio && ((MovimientoEdificio)m_patronActual).ObjetivosTotales > 0)
+                m_patronActual = new MovimientoEdificio();
+            else*/
+            if (npc.movimientosRandoms)
+            {
+                m_patronActual = new MovimientoRandom();
+                m_patronActual.Init(npc);
+            } if (m_patronActual != null)
+                m_patronActual = null;
         }
         else npc.estadoActual = EstadoNPC.Quieto;
     }
 
-    #region Movimiento Random
-    public void StartMoverRandom()
+    /// <summary>
+    /// Retorna 1 si debe esquivar y -1 si no debe. Si no sabe retorna 0. Si no tiene patron retorna -1;
+    /// </summary>
+    public int DebeEsquivar(NPC otroNPC)
     {
-        //Debug.Log("MoverRandom");
-        PausarAnterior();
-        objetivoRandom = m_ciudad.GetCaminoRandom();
-        m_movActual = StartCoroutine(MoverRandom());
+        if (m_patronActual != null)
+            return m_patronActual.DebeEsquivar(otroNPC);
+        return -1;
     }
+}
 
-    IEnumerator MoverRandom()
+[Serializable]
+public class PosRutina
+{
+    public float m_tiempoEspera;
+    public Vector2 m_pos;
+}
+
+public abstract class PatronMovimiento
+{
+    protected NPC m_npc;
+    protected PathfinderNPC m_pathfinder;
+    protected Pies m_pies;
+    protected Ciudad m_ciudad;
+
+    public abstract void Update();
+
+    /// <summary>
+    /// Retorna 1 si debe esquivar y -1 si no debe. Si no sabe retorna 0.
+    /// </summary>
+    public abstract int DebeEsquivar(NPC otroNPC);
+
+    public virtual void Init(NPC npc)
     {
+        m_npc = npc;
+        m_pathfinder = npc.pathfinder;
+        m_pies = npc.pies;
+        m_ciudad = npc.ciudad;
+    }
+}
+
+public class MovimientoRandom : PatronMovimiento
+{
+    public override void Update()
+    {
+        if (m_pies.moviendo) return;
+        Vector2 objetivoRandom = m_ciudad.GetCaminoRandom();
         m_pathfinder.RutaTo(objetivoRandom, false, true);
-        yield return new WaitWhile(() => m_pathfinder.enRuta);
     }
-    #endregion
 
-    #region Movimiento Edificio
-    public void StartMoverToEdificios(List<Edificio> edificios)
+    public override int DebeEsquivar(NPC otroNPC)
     {
-        if (npc.estadoActual != EstadoNPC.Entrando && npc.estadoActual != EstadoNPC.Ocupado)
+        return 1;
+    }
+}
+
+public class MovimientoEdificio : PatronMovimiento
+{
+    public int ObjetivosTotales { get { return m_objetivos.Count; } }
+
+    //Las entradas de los edificios
+    private List<EdificioData> m_objetivos = new List<EdificioData>();
+    private EdificioData m_edificioObjetivo = new EdificioData();
+
+    private EEstado m_estado;
+    private enum EEstado
+    {
+        EnRuta,
+        Posicionarse,
+        Entrando,
+        EnEdifio,
+        Esperando,
+        Saliendo
+    }
+
+    private float m_time;
+
+    public MovimientoEdificio(List<EdificioData> edificios)
+    {
+        m_objetivos = new List<EdificioData>(edificios);
+    }
+
+    public override void Init(NPC npc)
+    {
+        base.Init(npc);
+        GoNext();
+    }
+
+    public void AddObjetivos(List<EdificioData> edificios)
+    {
+        m_objetivos.AddRange(edificios);
+    }
+
+    private void GoNext()
+    {
+        List<Vector2> entradas = new List<Vector2>();
+        m_objetivos.ForEach(x => entradas.Add(x.Entrada));
+        m_pathfinder.RutaTo(entradas, true, true);
+        m_estado = EEstado.EnRuta;
+    }
+
+    public override void Update()
+    {
+        switch (m_estado)
         {
-            PausarAnterior();
-            edificiosObjetivos.AddRange(edificios);
-            m_movActual = StartCoroutine(MoverToEdificios());
+            case EEstado.EnRuta:
+                if (!m_pathfinder.enRuta)
+                {
+                    m_pathfinder.rutaOriginal.Clear();
+                    m_npc.estadoActual = EstadoNPC.Ocupado;
+                    m_edificioObjetivo = GetEdificioObjetivo();
+                    if (m_edificioObjetivo.Entrada != m_npc.transform.position)
+                    {
+                        //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada);
+                        m_pies.Mover(m_edificioObjetivo.Entrada);
+                    }
+                    m_estado = EEstado.Posicionarse;
+                }
+                break;
+            case EEstado.Posicionarse:
+                if (!m_pies.moviendo)
+                {
+                    Entrar();
+                    m_estado = EEstado.Entrando;
+                }
+                break;
+            case EEstado.Entrando:
+                if (!m_pies.moviendo)
+                {
+                    m_edificioObjetivo.entradaLibre = true;
+                    m_pathfinder.EntrarEdificio();
+                    m_time = 0;
+                    m_estado = EEstado.EnEdifio;
+                }
+                break;
+            case EEstado.EnEdifio:
+                m_time += Time.deltaTime;
+                if (m_time > Utilidades.HorasRealesToSecsJuego(m_edificioObjetivo.horasDuracion))
+                {
+                    m_npc.SatisfacerNecesidad(m_edificioObjetivo);
+                    m_npc.ojos.Enable(true);
+                    m_estado = EEstado.Esperando;
+                }
+                break;
+            case EEstado.Esperando:
+                Vector2 posSalida = Utilidades.GetPosicionGrilla(m_edificioObjetivo.Entrada, m_ciudad.transform);
+                if (m_edificioObjetivo.entradaLibre && m_pathfinder.ComprobarObjetivo(posSalida))
+                {
+                    m_npc.estadoActual = EstadoNPC.Caminando;
+                    Vector3 posSalidaReal = Utilidades.GetPosicionReal(posSalida, m_ciudad.transform);
+                    m_pies.SetEnabledCol(true);
+                    m_npc.col2D.enabled = true;
+                    m_pathfinder.SalirEdificio(posSalida);
+                    //Debug.LogError(transform.position + " --> " + posSalidaReal);
+                    m_pies.Mover(posSalidaReal);
+                    m_npc.StartCoroutine("CambiarAlpha", (1 / (2 * m_pies.GetVelocidadMaximaReal)));
+                    m_edificioObjetivo.entradaLibre = false;
+                    m_estado = EEstado.Saliendo;
+                }
+                break;
+            case EEstado.Saliendo:
+                if (!m_pies.moviendo)
+                {
+                    m_npc.estadoActual = EstadoNPC.Quieto;
+                    m_edificioObjetivo.entradaLibre = true;
+                    m_objetivos.Remove(m_edificioObjetivo);
+                    m_pathfinder.ClearRutaActual();
+
+                    if (m_objetivos.Count > 0) GoNext();
+                    else m_npc.movimiento.SiguienteAccion();
+                }
+                break;
         }
     }
 
-    IEnumerator MoverToEdificios()
-    {
-        List<Vector2> posiciones = new List<Vector2>();
-        edificiosObjetivos.ForEach(x => posiciones.Add(x.Entrada));
-        yield return new WaitWhile(() => pies.moviendo);
-        m_pathfinder.RutaTo(posiciones, true, true);
-        yield return new WaitWhile(() => m_pathfinder.enRuta);
-        m_movActual = null;
-        m_pathfinder.rutaOriginal.Clear();
-        StartCoroutine(EntrarEdificio());
-    }
-
-    IEnumerator EntrarEdificio()
-    {
-        npc.estadoActual = EstadoNPC.Entrando;
-        Edificio edificioObjetivo = GetEdificioObjetivo();
-        //Ponerse al frente de la entrada
-        if (edificioObjetivo.Entrada != transform.position)
-        {
-            //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada);
-            pies.Mover(edificioObjetivo.Entrada);
-            yield return new WaitWhile(() => pies.moviendo);
-        }
-        Entrar(edificioObjetivo);
-        yield return new WaitWhile(() => pies.moviendo);
-        edificioObjetivo.entradaLibre = true;
-        m_pathfinder.EntrarEdificio();
-        //Satisfacer Necesidad
-        npc.estadoActual = EstadoNPC.Ocupado;
-        yield return new WaitForSeconds(Utilidades.HorasRealesToSecsJuego(edificioObjetivo.horasDuracion));
-        npc.SatisfacerNecesidad(edificioObjetivo);
-        //Salir
-        saliendoEdificio = true;
-        ojos.Enable(true);
-        Vector2 posSalida = Utilidades.GetPosicionGrilla(edificioObjetivo.Entrada, m_ciudad.transform);
-        yield return new WaitUntil(() => edificioObjetivo.entradaLibre && m_pathfinder.ComprobarObjetivo(posSalida));
-        npc.estadoActual = EstadoNPC.Caminando;
-        Vector3 posSalidaReal = Utilidades.GetPosicionReal(posSalida, m_ciudad.transform);
-        pies.SetEnabledCol(true);
-        col2D.enabled = true;
-        m_pathfinder.SalirEdificio(posSalida);
-        //Debug.LogError(transform.position + " --> " + posSalidaReal);
-        pies.Mover(posSalidaReal);
-        npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
-        edificioObjetivo.entradaLibre = false;
-        yield return new WaitWhile(() => pies.moviendo);
-        npc.estadoActual = EstadoNPC.Quieto;
-        edificioObjetivo.entradaLibre = true;
-        edificiosObjetivos.Remove(edificioObjetivo);
-        saliendoEdificio = false;
-        m_pathfinder.ClearRutaActual();
-        SiguienteAccion();
-    }
-
-    private void Entrar(Edificio edificioObjetivo)
+    private void Entrar()
     {
         //Debug.LogError(transform.position + " --> " + edificioObjetivo.Entrada + new Vector3(0, 0.5f));
-        pies.Mover(edificioObjetivo.Entrada + new Vector3(0, 0.5f));
-        npc.StartCoroutine("CambiarAlpha", (1 / (2 * pies.GetVelocidadMaximaReal)));
+        m_pies.Mover(m_edificioObjetivo.Entrada + new Vector3(0, 0.5f));
+        m_npc.StartCoroutine("CambiarAlpha", (1 / (2 * m_pies.GetVelocidadMaximaReal)));
         m_pathfinder.posOcupadas.Clear();
-        ojos.Enable(false);
-        col2D.enabled = false;
-        pies.SetEnabledCol(false);
-        edificioObjetivo.entradaLibre = false;
+        m_npc.ojos.Enable(false);
+        m_npc.col2D.enabled = false;
+        m_pies.SetEnabledCol(false);
+        m_edificioObjetivo.entradaLibre = false;
     }
 
-    public Edificio GetEdificioObjetivo()
+    public EdificioData GetEdificioObjetivo()
     {
-        Edificio edificioObjetivo = null;
+        EdificioData edificioObjetivo = null;
         float distancia;
         float menorDistancia = float.MaxValue;
 
-        for (int i = 0; i < edificiosObjetivos.Count; i++)
+        for (int i = 0; i < m_objetivos.Count; i++)
         {
-            distancia = Vector2.Distance(edificiosObjetivos[i].Entrada, transform.position);
+            distancia = Vector2.Distance(m_objetivos[i].Entrada, m_npc.transform.position);
             if (distancia < menorDistancia)
             {
                 menorDistancia = distancia;
-                edificioObjetivo = edificiosObjetivos[i];
+                edificioObjetivo = m_objetivos[i];
             }
         }
 
         return edificioObjetivo;
     }
-    #endregion
+
+    public override int DebeEsquivar(NPC otroNPC)
+    {
+        if (otroNPC.movimiento.m_patronActual != null && otroNPC.movimiento.m_patronActual is MovimientoEdificio)
+        {
+            MovimientoEdificio movOtroNPC = otroNPC.movimiento.m_patronActual as MovimientoEdificio;
+            if (movOtroNPC.GetEdificioObjetivo() == GetEdificioObjetivo())
+            {
+                if (m_estado == EEstado.Saliendo || movOtroNPC.m_estado == EEstado.Saliendo) return 1;
+            }
+            else
+            {
+                if (movOtroNPC.m_estado == EEstado.Entrando || movOtroNPC.m_estado == EEstado.Saliendo) return 1;
+                else if (m_estado == EEstado.Entrando || m_estado == EEstado.Saliendo) return -1;
+            }
+        }
+        return 0;
+    }
+}
+
+public class MovimientoRutina : PatronMovimiento
+{
+    private EEstado m_estado;
+    private enum EEstado
+    {
+        Moviendo,
+        Esperando
+    }
+
+    private PosRutina[] m_rutina;
+    private PosRutina m_actual;
+    private int m_indicePosSiguiente = 0;
+    private float m_time;
+
+    public MovimientoRutina(PosRutina[] rutina)
+    {
+        m_rutina = rutina;
+    }
+
+    public override void Init(NPC npc)
+    {
+        base.Init(npc);
+        GoNext();
+    }
+
+    public override void Update()
+    {
+        switch (m_estado)
+        {
+            case EEstado.Moviendo:
+                if (!m_npc.pies.moviendo)
+                {
+                    m_time = 0;
+                    m_estado = EEstado.Esperando;
+                }
+                break;
+            case EEstado.Esperando:
+                m_time += Time.deltaTime;
+                if (m_time > m_actual.m_tiempoEspera)
+                    GoNext();
+                break;
+        }
+
+    }
+
+    private void GoNext()
+    {
+        m_actual = m_rutina[m_indicePosSiguiente];
+        m_npc.pathfinder.RutaTo(m_actual.m_pos, true, true);
+        m_indicePosSiguiente++;
+        if (m_indicePosSiguiente > m_rutina.Length)
+            m_indicePosSiguiente = 0;
+        m_estado = EEstado.Moviendo;
+    }
+
+    public override int DebeEsquivar(NPC otroNPC)
+    {
+        if (m_estado == EEstado.Esperando)
+            return 1;
+        return 0;
+    }
 }

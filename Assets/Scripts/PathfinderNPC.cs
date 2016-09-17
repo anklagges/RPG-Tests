@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -14,22 +15,11 @@ public class PosRutaActual
     }
 }
 
-public class PosRuta
-{
-    public float m_tiempo;
-    public Vector2 m_posicion;
-
-    public PosRuta(float tiempo, Vector2 pos)
-    {
-        m_tiempo = tiempo;
-        m_posicion = pos;
-    }
-}
-
 public class PathfinderNPC : MonoBehaviour
 {
     public Dictionary<Vector2, PosRutaActual> rutaActual = new Dictionary<Vector2, PosRutaActual>();
-    public PosRuta ultimaPosicion;
+    public Vector2? ultimaPosicion;
+    public Vector2? penultimaPosicion;
 
     //Componentes y Partes
     private NPC npc;
@@ -108,10 +98,9 @@ public class PathfinderNPC : MonoBehaviour
 
     public void BuscarNuevaRuta(NPC otroNPC)
     {
-        if (m_movimiento.m_movActual != null && !rerouting)
+        if (!rerouting)
         {
             tienePreferencia = false;
-            m_movimiento.StopActual();
             if (corutinaAux != null) StopCoroutine(corutinaAux);
             StartCoroutine(Reroute(otroNPC.pathfinder));
         }
@@ -119,9 +108,10 @@ public class PathfinderNPC : MonoBehaviour
 
     private IEnumerator Reroute(PathfinderNPC otroNPC)
     {
-        rerouting = true;
+        //rerouting = true;
         if (pies.moviendo) yield return new WaitWhile(() => pies.moviendo);
-        float distancia = (Mathf.Abs(otroNPC.transform.position.x - transform.position.x) + Mathf.Abs(otroNPC.transform.position.y - transform.position.y));
+        RutaTo(m_objetivoFinal.Value, false);
+        /*float distancia = (Mathf.Abs(otroNPC.transform.position.x - transform.position.x) + Mathf.Abs(otroNPC.transform.position.y - transform.position.y));
         int espaciosExtras = Mathf.FloorToInt(distancia / GeneradorSuelo.sueloSize);
         if (espaciosExtras < 1) espaciosExtras = 1;
         int indice = rutaOriginal.FindIndex(x => x == posOcupadas[0]) + espaciosExtras;
@@ -137,9 +127,12 @@ public class PathfinderNPC : MonoBehaviour
             RutaTo(rutaOriginal.GetRange(indice, rutaOriginal.Count - indice), false);
             yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);
             //Debug.Log("BACK ON TRACK!");
-        }
-        rerouting = false;
-        m_movimiento.SiguienteAccion();
+        }*/
+        /*RutaTo(rutaOriginal.Last(), false);
+        yield return new WaitWhile(() => npc.estadoActual == EstadoNPC.Quieto);*/
+        /*rerouting = false;
+        RutaTo(m_objetivoFinal.Value, false);*/
+        //m_movimiento.SiguienteAccion();
     }
 
     public void RutaTo(Vector2 objetivo, bool esPosReal, bool esObjetivoFinal = false)
@@ -155,7 +148,7 @@ public class PathfinderNPC : MonoBehaviour
         if (esPosReal) objetivos = Utilidades.GetPosicionesGrilla(objetivos, m_ciudad.transform);
         TreeNode nodoMasCercano;
         Vector2 posActual = GetPosActualGrilla();
-        List<Vector2> posiciones = GetRuta(posActual, objetivos, rerouting, out nodoMasCercano);
+        List<Vector2> posiciones = GetRuta(posActual, objetivos, considerarNPCs, out nodoMasCercano);
         if (posiciones == null && nodoMasCercano != null)
             posiciones = PathFinder.TransformarRuta(nodoMasCercano.ObtenerRutaDesdeOrigen());
         if (posiciones == null || (posiciones.Count == 2 && posiciones[0] == posiciones[1]))
@@ -221,7 +214,6 @@ public class PathfinderNPC : MonoBehaviour
             if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
             {
                 npc.estadoActual = EstadoNPC.Quieto;
-                Debug.LogError(npc.nombre);
                 enRuta = false;
                 m_objetivoFinal = null;
                 yield break;
@@ -275,8 +267,8 @@ public class PathfinderNPC : MonoBehaviour
                         MoverOcupar(objetivoSiguiente);
                     else
                     {
-                        DejarPasar(npcEsperado.ultimaPosicion.m_posicion);
-                        npcEsperado.EsperarNPC(npcEsperado.ultimaPosicion.m_posicion);
+                        DejarPasar(npcEsperado.ultimaPosicion.Value);
+                        npcEsperado.EsperarNPC(npcEsperado.ultimaPosicion.Value);
                         yield return new WaitWhile(() => npcEsperado.npc.estadoActual == EstadoNPC.Esperando);
                     }
 
@@ -347,7 +339,7 @@ public class PathfinderNPC : MonoBehaviour
 
     IEnumerator CoDejarPasar(Vector2 posFinalOtro)
     {
-        if (npc.estadoActual != EstadoNPC.Entrando)
+        if (npc.estadoActual != EstadoNPC.Ocupado)
         {
             yield return new WaitWhile(() => pies.moviendo);
             Suelo sueloActual, sueloAux;
@@ -451,14 +443,13 @@ public class PathfinderNPC : MonoBehaviour
             yield return new WaitWhile(() => pies.moviendo);
         }
         if (!rerouting) rutaOriginal = posicionesGrilla;
-        SetRutaActual(posicionesGrilla);
         List<Vector2> nuevaRuta = null;
         int i = 1;
         TreeNode nodoMasCercano;
+        List<Vector2> grillaRestante = new List<Vector2>(posicionesGrilla);
         while (i < posicionesGrilla.Count)
         {
-            if (rutaActual[posicionesGrilla[i - 1]].m_tiempo + Suelo.c_margen < Time.time)
-                SetRutaActual(posicionesGrilla.GetRange(i - 1, posicionesGrilla.Count - i + 1));
+            SetRutaActual(grillaRestante);
             //Esperar?
             if (posicionesGrilla[i] == posicionesGrilla[i - 1])
                 yield return new WaitForSeconds(1 / pies.GetVelocidadMaximaReal);
@@ -483,13 +474,13 @@ public class PathfinderNPC : MonoBehaviour
                     else
                     {
                         //if (npc.nombre == "Pepe") Debug.Log("WAT");
-                        Acercarse(ultimaPosicion.m_posicion);
+                        Acercarse(ultimaPosicion.Value);
                     }
                     yield break;
                 }
             }
             //Comprobar un mejor camino
-            if (rerouting && i < posicionesGrilla.Count - 1)
+            /*if (rerouting && i < posicionesGrilla.Count - 1)
             {
                 nuevaRuta = GetRuta(posicionesGrilla[i], rutaOriginal, considerarNPCs, out nodoMasCercano);
                 if (nuevaRuta != null && nuevaRuta.Count > 1 && posicionesGrilla[i + 1] != nuevaRuta[1] && nuevaRuta.Count < posicionesGrilla.Count - i)
@@ -498,10 +489,12 @@ public class PathfinderNPC : MonoBehaviour
                     corutinaAux = StartCoroutine(GoRuta(nuevaRuta));
                     yield break;
                 }
-            }
+            }*/
             i++;
+            if (grillaRestante.Count > 0)
+                grillaRestante.RemoveAt(0);
         }
-        //Debug.LogError(npc.nombre);
+        Debug.LogError(npc.nombre);
         if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
         {
             enRuta = false;
@@ -561,13 +554,15 @@ public class PathfinderNPC : MonoBehaviour
         if (!rutaActual.ContainsKey(pos))
             rutaActual.Add(pos, new PosRutaActual(tiempo, 0));
         else rutaActual[pos].m_vecesEsperado++;
-        ultimaPosicion = new PosRuta(tiempo, pos);
+        penultimaPosicion = ultimaPosicion;
+        ultimaPosicion = pos;
     }
 
     public void ClearRutaActual()
     {
         rutaActual.Clear();
         ultimaPosicion = null;
+        penultimaPosicion = null;
     }
 
     private void SetRutaActual(List<Vector2> posicionesGrilla)
@@ -576,20 +571,25 @@ public class PathfinderNPC : MonoBehaviour
         float tiempoActumulado = Time.time;
         for (int p = 0; p < posicionesGrilla.Count; p++)
         {
-            tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
-            AddRutaActual(posicionesGrilla[p], tiempoActumulado);
+            if (p == 0 && posicionesGrilla[p] == GetPosActualGrilla())
+                AddRutaActual(posicionesGrilla[p], Time.time);
+            else
+            {
+                tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
+                AddRutaActual(posicionesGrilla[p], tiempoActumulado);
+            }
         }
     }
 
     void OnDrawGizmos()
     {
         Vector3 extra = Vector3.zero;
-        if (npc.nombre == "Paula")
+        if (npc.nombre == "Francisca")
         {
             Gizmos.color = Color.red;
             extra = new Vector3(-0.05f, -0.05f);
         }
-        else if (npc.nombre == "Francisca")
+        else if (npc.nombre == "Paula")
         {
             Gizmos.color = Color.magenta;
             extra = new Vector3(0.05f, 0.05f);
@@ -604,15 +604,33 @@ public class PathfinderNPC : MonoBehaviour
             Gizmos.color = Color.white;
             extra = new Vector3(0.1f, 0.1f);
         }
-        if (rutaOriginal.Count > 0)
+        /*if (rutaOriginal.Count > 0)
         {
-            List<Vector3> rutaRealOriginal = new List<Vector3>();
+            List<Vector3> rutaReal = new List<Vector3>();
             for (int i = 0; i < rutaOriginal.Count; i++)
-                rutaRealOriginal.Add(Utilidades.GetPosicionReal(rutaOriginal[i], m_ciudad.transform));
-            for (int i = 0; i < rutaRealOriginal.Count - 1; i++)
+                rutaReal.Add(Utilidades.GetPosicionReal(rutaOriginal[i], m_ciudad.transform));
+            for (int i = 0; i < rutaReal.Count - 1; i++)
             {
-                Gizmos.DrawLine(rutaRealOriginal[i] + extra, rutaRealOriginal[i + 1] + extra);
+                Gizmos.DrawLine(rutaReal[i] + extra, rutaReal[i + 1] + extra);
+            }
+        }*/
+        List<Vector2> rutaFiltrada = GetRutaFiltrada();
+        if (rutaFiltrada.Count > 0)
+        {
+            List<Vector3> rutaReal = new List<Vector3>();
+            for (int i = 0; i < rutaFiltrada.Count; i++)
+                rutaReal.Add(Utilidades.GetPosicionReal(rutaFiltrada[i], m_ciudad.transform));
+            for (int i = 0; i < rutaReal.Count - 1; i++)
+            {
+                Gizmos.DrawLine(rutaReal[i] + extra, rutaReal[i + 1] + extra);
             }
         }
+    }
+
+    //Retorna la direccion a la ultima posicion en valores -1, 0 o 1
+    public Vector2 DireccionObjetivo()
+    {
+        Vector2 direccion = (ultimaPosicion.Value - GetPosActualGrilla()).normalized;
+        return new Vector2(Mathf.Sign(direccion.x), Mathf.Sign(direccion.y));
     }
 }

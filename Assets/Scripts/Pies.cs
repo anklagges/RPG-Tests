@@ -52,7 +52,7 @@ public class Pies : MonoBehaviour
     public void Mover(Vector3 objetivo)
     {
         moviendo = true;
-        ultimaDistancia = Mathf.Infinity;
+        ultimaDistancia = float.MaxValue;
         posMovimiento = objetivo;
         removerAlFinalizar = false;
     }
@@ -139,7 +139,7 @@ public class Pies : MonoBehaviour
         if (col.gameObject.tag == "NPC")
         {
             NPC otroNPC = col.gameObject.GetComponent<NPC>();
-            if (otroNPC.ojos.DebeEsquivar(otroNPC, true))
+            if (npc.ojos.DebeEsquivar(otroNPC, true))
             {
                 pathfinder.BuscarNuevaRuta(otroNPC);
                 Debug.Log("Nueva Ruta: " + npc.nombre);
