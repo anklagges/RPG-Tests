@@ -443,14 +443,13 @@ public class PathfinderNPC : MonoBehaviour
             yield return new WaitWhile(() => pies.moviendo);
         }
         if (!rerouting) rutaOriginal = posicionesGrilla;
-        SetRutaActual(posicionesGrilla);
         List<Vector2> nuevaRuta = null;
         int i = 1;
         TreeNode nodoMasCercano;
+        List<Vector2> grillaRestante = new List<Vector2>(posicionesGrilla);
         while (i < posicionesGrilla.Count)
         {
-            if (rutaActual[posicionesGrilla[i - 1]].m_tiempo + Suelo.c_margen < Time.time)
-                SetRutaActual(posicionesGrilla.GetRange(i - 1, posicionesGrilla.Count - i + 1));
+            SetRutaActual(grillaRestante);
             //Esperar?
             if (posicionesGrilla[i] == posicionesGrilla[i - 1])
                 yield return new WaitForSeconds(1 / pies.GetVelocidadMaximaReal);
@@ -492,6 +491,8 @@ public class PathfinderNPC : MonoBehaviour
                 }
             }*/
             i++;
+            if (grillaRestante.Count > 0)
+                grillaRestante.RemoveAt(0);
         }
         Debug.LogError(npc.nombre);
         if (m_objetivoFinal.HasValue && GetPosActualGrilla() == m_objetivoFinal)
@@ -570,8 +571,13 @@ public class PathfinderNPC : MonoBehaviour
         float tiempoActumulado = Time.time;
         for (int p = 0; p < posicionesGrilla.Count; p++)
         {
-            tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
-            AddRutaActual(posicionesGrilla[p], tiempoActumulado);
+            if (p == 0 && posicionesGrilla[p] == GetPosActualGrilla())
+                AddRutaActual(posicionesGrilla[p], Time.time);
+            else
+            {
+                tiempoActumulado += TiempoPorCasilla(posicionesGrilla[p]);
+                AddRutaActual(posicionesGrilla[p], tiempoActumulado);
+            }
         }
     }
 
