@@ -11,5 +11,5 @@ public class Necesidad
     }
     public string Nombre;
     public int Valor;
-    public Edificio EdificioUtil;//TO.DO! Multiples edificios
+    public EdificioData EdificioUtil;//TO.DO! Multiples edificios
 }

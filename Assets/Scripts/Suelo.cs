@@ -131,20 +131,33 @@ public class Suelo : Data
     public static bool RutasCruzadas(List<Vector2> rutaA, List<Vector2> rutaB, Ciudad ciudad, PathfinderNPC npcA, PathfinderNPC npcB)
     {
         Suelo suelo;
+        /* if ((npcB.ultimaPosicion == null && npcB.posOcupadas.Count > 0) ||
+             (npcA.ultimaPosicion == null && npcA.posOcupadas.Count > 0))*/
         if (npcB.ultimaPosicion == null)
             return true;
-        Vector2 ultimaPos = npcB.ultimaPosicion.m_posicion;
+        Vector2 posFinal = npcB.ultimaPosicion.Value;
+        //Ignora la ultima posicion si ambos van hacia alla. TEST QUE PASA SI LA POS FINAL NO ES UN EDIFICIO!
+        bool ignorarUltimaPos = npcA.ultimaPosicion.Value == npcB.ultimaPosicion.Value;
+        if (ignorarUltimaPos)
+        {
+            rutaA.Remove(npcA.ultimaPosicion.Value);
+            rutaB.Remove(npcB.ultimaPosicion.Value);
+        }
         for (int a = 0; a < rutaA.Count; a++)
         {
             for (int b = 0; b < rutaB.Count; b++)
             {
-                if (Mathf.Abs(rutaA[a].x - rutaB[b].x) + Mathf.Abs(rutaA[a].y - rutaB[b].y) <= 1)
+                if (Mathf.Abs(rutaA[a].x - rutaB[b].x) + Mathf.Abs(rutaA[a].y - rutaB[b].y) == 1)
                 {
-                    suelo = new Suelo(rutaA[a], ultimaPos, ciudad, true, npcA);
-                    if (!suelo.EsPosible(npcB, rutaB[b]))
+                    PosRutaActual tiempoLlegada;
+                    if (npcA.rutaActual.TryGetValue(rutaB[b], out tiempoLlegada))
                     {
-                        //Debug.LogError(rutaA[a] + " -> " + rutaB[b]);
-                        return true;
+                        suelo = new Suelo(rutaA[a], posFinal, ciudad, true, npcA);
+                        if (!suelo.EsPosible(tiempoLlegada.m_tiempo, npcB, rutaB[b], ignorarUltimaPos: ignorarUltimaPos))
+                        {
+                            //Debug.LogError(rutaA[a] + " -> " + rutaB[b]);
+                            return true;
+                        }
                     }
                 }
             }
@@ -180,7 +193,8 @@ public class Suelo : Data
                 if (otroNPC == NpcActual) continue;
                 if (otroNPC.NpcCaminando())
                 {
-                    if (!EsPosible(otroNPC, pos, usarMargen)) return false;
+                    float tiempoLlegada = m_tiempoAcumulado + NpcActual.TiempoPorCasilla(pos);
+                    if (!EsPosible(tiempoLlegada, otroNPC, pos, usarMargen)) return false;
                 }
                 else if (otroNPC.posOcupadas.Contains(pos))
                     return false;
@@ -190,14 +204,12 @@ public class Suelo : Data
         return true;
     }
 
-    public bool EsPosible(PathfinderNPC otroNPC, Vector2 pos, bool usarMargen = true)
+    public bool EsPosible(float tiempoLlegada, PathfinderNPC otroNPC, Vector2 pos, bool usarMargen = true, bool ignorarUltimaPos = false)
     {
-        float tiempoAccion;
         PosRutaActual tiempoSwap, tiempoAux;
         //Checar si calzan los tiempos estimados
         if (otroNPC.rutaActual.TryGetValue(pos, out tiempoAux))
         {
-            tiempoAccion = m_tiempoAcumulado + NpcActual.TiempoPorCasilla(pos);
             //Checar que no vaya a haber otro npc en ese momento
             float medioTiempoOtro = MedioTiempo(otroNPC, pos);
             float tiempoEntrada = tiempoAux.m_tiempo - medioTiempoOtro;
@@ -208,7 +220,7 @@ public class Suelo : Data
                 tiempoSalida += c_margen;
             }
             //DebugIf(pos, "DEBUG");
-            if (tiempoAccion >= tiempoEntrada && tiempoAccion <= tiempoSalida)
+            if (tiempoLlegada >= tiempoEntrada && tiempoLlegada <= tiempoSalida)
             {
                 DebugIf(pos, "NO NORMAL");
                 return false;
@@ -217,11 +229,11 @@ public class Suelo : Data
             if (otroNPC.rutaActual.TryGetValue(PosicionNPC, out tiempoSwap))
             {
                 //Checar que la ruta del npc no este contenida en la ruta del otro.
-                float tiempoInicialNPC = tiempoAccion - 2 * MedioTiempo(NpcActual, PosicionNPC);
+                float tiempoInicialNPC = tiempoLlegada - 2 * MedioTiempo(NpcActual, PosicionNPC);
                 //Se le agrega medio tiempo extra para permitir que salgan de sus tiles
                 float tiempoInicialOtro = tiempoSwap.m_tiempo - 3 * medioTiempoOtro;
                 float tiempoFinalOtro = tiempoSwap.m_tiempo + medioTiempoOtro;
-                if ((tiempoAccion <= tiempoFinalOtro && tiempoAccion >= tiempoInicialOtro) ||
+                if ((tiempoLlegada <= tiempoFinalOtro && tiempoLlegada >= tiempoInicialOtro) ||
                     (tiempoInicialNPC <= tiempoFinalOtro && tiempoInicialNPC >= tiempoInicialOtro))
                 {
                     DebugIf(pos, "NO SWAP");
@@ -229,8 +241,8 @@ public class Suelo : Data
                 }
             }
             //Checar si la posicion a ocupar sera la ultima del otro npc y que llegara despues que el. (Dado que el otro npc se quedara parado ahi)
-            if (otroNPC.ultimaPosicion.m_posicion == pos &&
-                tiempoAccion > tiempoAux.m_tiempo + medioTiempoOtro)
+            if (!ignorarUltimaPos && otroNPC.ultimaPosicion.Value == pos &&
+                tiempoLlegada > tiempoAux.m_tiempo + medioTiempoOtro)
             {
                 DebugIf(pos, "ULTIMA POS");
                 return false;
