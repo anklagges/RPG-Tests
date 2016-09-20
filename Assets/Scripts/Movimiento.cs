@@ -95,6 +95,48 @@ public class PosRutina
 {
     public float m_tiempoEspera;
     public Vector2 m_pos;
+    public PosRutina[] m_subRutina;
+    [HideInInspector][NonSerialized]
+    public int m_indiceActual = -1;
+
+    public Vector2 GetObjetivo()
+    {
+        if (m_indiceActual == -1)
+            return m_pos;
+        else return m_subRutina[m_indiceActual].GetObjetivo();
+    }
+
+    public float GetTiempoEspera()
+    {
+        if (m_indiceActual == -1)
+            return m_tiempoEspera;
+        else return m_subRutina[m_indiceActual].GetTiempoEspera();
+    }
+
+    public void SetPosReales(Transform transCiudad)
+    {
+        m_pos = Utilidades.GetPosicionGrilla(m_pos, transCiudad);
+        for (int i = 0; i < m_subRutina.Length; i++)
+        {
+            m_subRutina[i].SetPosReales(transCiudad);
+        }
+    }
+
+    public bool TryGoNext()
+    {
+        if (m_subRutina.Length == 0)
+            return false;
+
+        if (m_indiceActual != -1 && m_subRutina[m_indiceActual].TryGoNext())
+            return true;
+        else if (m_indiceActual >= m_subRutina.Length - 1)
+        {
+            m_indiceActual = -1;
+            return false;
+        }
+        m_indiceActual++;
+        return true;
+    }
 }
 
 public abstract class PatronMovimiento
@@ -315,7 +357,7 @@ public class MovimientoRutina : PatronMovimiento
 
     private PosRutina[] m_rutina;
     private PosRutina m_actual;
-    private int m_indicePosSiguiente = 0;
+    private int m_indiceActual = 0;
     private float m_time;
 
     public void SetRutina(PosRutina[] rutina, bool posReales)
@@ -324,11 +366,11 @@ public class MovimientoRutina : PatronMovimiento
         {
             for (int i = 0; i < rutina.Length; i++)
             {
-                rutina[i].m_pos = Utilidades.GetPosicionGrilla(rutina[i].m_pos, m_ciudad.transform);
+                rutina[i].SetPosReales(m_ciudad.transform);
             }
         }
         m_rutina = rutina;
-        GoNext();
+        SetActual();
     }
 
     public override void Update()
@@ -344,7 +386,7 @@ public class MovimientoRutina : PatronMovimiento
                 break;
             case EEstado.Esperando:
                 m_time += Time.deltaTime;
-                if (m_time > m_actual.m_tiempoEspera)
+                if (m_time > m_actual.GetTiempoEspera())
                     GoNext();
                 break;
         }
@@ -353,11 +395,19 @@ public class MovimientoRutina : PatronMovimiento
 
     private void GoNext()
     {
-        m_actual = m_rutina[m_indicePosSiguiente];
-        m_npc.pathfinder.RutaTo(m_actual.m_pos, false, true);
-        m_indicePosSiguiente++;
-        if (m_indicePosSiguiente >= m_rutina.Length)
-            m_indicePosSiguiente = 0;
+        if (!m_actual.TryGoNext())
+        {
+            m_indiceActual++;
+            if (m_indiceActual >= m_rutina.Length)
+                m_indiceActual = 0;
+        }
+        SetActual();
+    }
+
+    private void SetActual()
+    {
+        m_actual = m_rutina[m_indiceActual];
+        m_npc.pathfinder.RutaTo(m_actual.GetObjetivo(), false, true);
         m_estado = EEstado.Moviendo;
     }
 
