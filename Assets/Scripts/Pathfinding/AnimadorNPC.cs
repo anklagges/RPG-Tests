@@ -10,6 +10,8 @@ public class AnimadorNPC : MonoBehaviour
     private Animator anim;
     private SpriteRenderer spriteRenderer;
 
+    private bool m_wasMoving;
+
     public void Init()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -27,7 +29,13 @@ public class AnimadorNPC : MonoBehaviour
         int vertical = Math.Sign(pies.direccion.y);
         anim.SetFloat("Horizontal", horizontal);
         anim.SetFloat("Vertical", vertical);
-        anim.SetBool("Moviendo", pies.moviendo);
+
+        //Previene que se apague entre cada tile
+        if(pies.moviendo)
+            anim.SetBool("Moviendo", true);
+        else if (!m_wasMoving)
+            anim.SetBool("Moviendo", false);
+        m_wasMoving = pies.moviendo;
     }
 
     public void CambiarAlpha(float tiempo)
