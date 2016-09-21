@@ -9,10 +9,10 @@ public class AreaNPC : AreaInteractuable
     protected override void Start()
     {
         base.Start();
+        Transform npc = transform.parent;
         m_accion = () =>
         {
-            GeneradorDialogo generador = GameObject.Find("Generador").GetComponent<GeneradorDialogo>();
-            generador.Generar(texto);//to.do entregar transform del npc para posicionar y mejorar FIND CON MONOSINGLETON
+            GeneradorDialogo.Instance.Generar(texto, npc);
         };
     }
 }
