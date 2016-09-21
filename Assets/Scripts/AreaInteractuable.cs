@@ -58,7 +58,8 @@ public class AreaInteractuable : MonoBehaviour
         }
     }
 
-    public void Accion(Vector3 direccionPlayer)
+    //Realiza una accion si esta en una direccion aceptable retornando true. False si no se realizo.
+    public bool Accion(Vector3 direccionPlayer)
     {
         bool direccionAceptable = m_cardinalidad == ECardinalidad.Full;
         for (int i = 0; i < m_direcciones.Length; i++)
@@ -72,7 +73,9 @@ public class AreaInteractuable : MonoBehaviour
             if (m_accion != null)
             {
                 m_accion();
+                return true;
             }
         }
+        return false;
     }
 }
